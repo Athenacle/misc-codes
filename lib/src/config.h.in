@@ -1,0 +1,75 @@
+
+#ifndef CONFIG_H_
+#define CONFIG_H_
+
+#cmakedefine UNIX_HAVE_GETOPTLONG
+
+#cmakedefine UNIX_HAVE_PTHREAD_SPINLOCK
+
+#cmakedefine UNIX_HAVE_PTHREAD_COND
+
+#cmakedefine HAVE_PTHREAD_H
+
+#cmakedefine UNIX_HAVE_PTHREAD_MUTEX
+
+#cmakedefine UNIX_HAVE_DLOPEN
+
+#cmakedefine HAVE_BZERO
+
+#cmakedefine HAVE_BUILTIN_EXPECT
+
+#cmakedefine UNIX
+
+#cmakedefine HAVE_CLOCK_REALTIME_COARSE
+
+#cmakedefine UNIX_HAVE_NANOSLEEP
+
+#cmakedefine ON_64BITS
+
+#cmakedefine UNIX_HAVE_GET_NPROCS
+
+#cmakedefine UNIX_HAVE_SETENV
+
+#cmakedefine UNIX_HAVE_MMAP
+
+// clang-format off
+
+#define PROJECT_GIT_SHA "@GIT_HASH@"
+
+#define PROJECT_NAME "@PROJECT_NAME@"
+#define PROJECT_VERSION "@WXAC_VERSION@"
+#define PROJECT_MAJOR_VERSION (@MAJOR_VERSION@)
+#define PROJECT_MINOR_VERSION (@MINOR_VERSION@)
+#define PROJECT_PATCH_VERSION (@PATCH_VERSION@)
+#define PROJECT_VERSION_HEX (unsigned)((PROJECT_MAJOR_VERSION << 24) | (PROJECT_MINOR_VERSION<< 8) | (PROJECT_PATCH_VERSION))
+// clang-format on
+
+#ifdef HAVE_BUILTIN_EXPECT
+#define likely(x) (__builtin_expect(!!(x), 1))
+#define unlikely(x) (__builtin_expect(!!(x), 0))
+#else
+#define likely(x) ((x))
+#define unlikely(x) ((x))
+#endif
+
+#if __cplusplus >= 200809L && __has_cpp_attribute(noreturn)
+#define NORETURN [[noreturn]]
+#else
+#define NORETURN
+#endif
+
+#if __cplusplus >= 201603L && __has_cpp_attribute(maybe_unused)
+#define MAYBE_UNUSED [[maybe_unused]]
+#else
+#define MAYBE_UNUSED
+#endif
+
+#if defined HAVE_ALLOCA && defined NDEBUG
+#define Alloca(size) (alloca(size))
+#define AllocaFree(ptr) ((void)(ptr))
+#else
+#define Alloca(size) (malloc(size))
+#define AllocaFree(ptr) (free((void*)(ptr)))
+#endif
+
+#endif
