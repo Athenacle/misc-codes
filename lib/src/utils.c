@@ -9,7 +9,7 @@
 
 #include <pthread.h>
 
-#define PSIZE (1 << 13)
+#define PSIZE (1 << 14)
 
 struct Buffer* createBuffer(size_t size)
 {
@@ -43,6 +43,11 @@ size_t totalSize(struct Buffer* buf)
     }
 
     return total;
+}
+
+void appendBufferString(struct Buffer* buf, const char* s)
+{
+    appendBuffer(buf, s, strlen(s));
 }
 
 void appendBuffer(struct Buffer* buf, const void* data, size_t size)

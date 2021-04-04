@@ -69,7 +69,9 @@ static void novel_detail_transform_aNODE_url(struct LinkList* node, void* data)
 {
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
-        node->data = get_node_attr(ptr, "href");
+        struct Chapter* ch = createChapter();
+        ch->url = get_node_attr(ptr, "href");
+        node->data = ch;
     }
 }
 
@@ -133,28 +135,38 @@ static void print(struct LinkList* list, void* data, void* buf)
     appendBuffer((struct Buffer*)buf, data, strlen(data));
 }
 
+static struct Chapter* allAtoChapters(struct LinkList* link)
+{
+    struct Chapter* first = (struct Chapter*)link->data;
+
+    while (link) {
+        if (link->next) {
+            ((struct Chapter*)link->data)->nextChapter = link->next->data;
+        }
+        link = link->next;
+    }
+    return first;
+}
+
 static void novel_detail_get_all_urls(xmlNodePtr root, struct Novel* n)
 {
     struct LinkList allA;
+
+    n->chapters = NULL;
+
     initLinkList(&allA);
 
     xmlNodePtr catalog = traverse_find_first(root, novel_detail_find_ul_catalog);
     if (catalog) {
-        struct Buffer buf;
-        size_t size;
-
-        initBuffer(&buf);
-
         traverse_find_all(catalog, novel_detail_find_A_in_catalog, &allA);
         traverseLinkList(&allA, novel_detail_transform_aNODE_url);
+
+
         website_do_parallel_work(&allA, novel_content_page);
-        traverseLinkListWithData(&allA, print, &buf);
-
-        n->context = collectBuffer(&buf, &size);
-        clearBuffer(&buf);
+        n->chapters = allAtoChapters(&allA);
+        //traverseLinkListWithData(&allA, print, &buf);
     }
-
-    freeLinkList(&allA, free);
+    freeLinkList(&allA, NULL);
 }
 
 static void novel_detail(struct CurlResponse* resp, struct Novel* n)

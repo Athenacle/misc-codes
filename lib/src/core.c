@@ -17,25 +17,32 @@ static const char logLevel[][8] = {"[NONE]", "[ERROR]", "[WARN]", "[INFO]", "[DE
 
 static opencc_t cc = NULL;
 
-#define CONVERT(field)                                  \
-    do {                                                \
-        if (n->field) {                                 \
-            p = opencc_convert_utf8(cc, n->field, all); \
-            free((char*)n->field);                      \
-            n->field = p;                               \
-        }                                               \
+#define CONVERT(field)                                                 \
+    do {                                                               \
+        if (n->field) {                                                \
+            char* p = opencc_convert_utf8(cc, n->field, (size_t)(-1)); \
+            free((char*)n->field);                                     \
+            n->field = p;                                              \
+        }                                                              \
     } while (0)
+
+static void doOpenCCChapters(struct Chapter* n)
+{
+    while (n) {
+        CONVERT(title);
+        CONVERT(desc);
+        CONVERT(context);
+        n = n->nextChapter;
+    }
+}
 
 static void doOpenCC(struct Novel* n)
 {
-    char* p = NULL;
-    size_t all = (size_t)-1;
-
     CONVERT(title);
     CONVERT(author);
     CONVERT(start_url);
     CONVERT(desc);
-    CONVERT(context);
+    doOpenCCChapters(n->chapters);
 }
 
 #undef CONVERT
@@ -141,11 +148,67 @@ void buildLibXml2(struct CurlResponse* resp)
     }
 }
 
+static void ND_clear_chapter(struct Chapter* n)
+{
+    struct Chapter* saved = NULL;
+    while (n) {
+        opencc_convert_utf8_free((char*)n->title);
+        opencc_convert_utf8_free((char*)n->desc);
+        opencc_convert_utf8_free((char*)n->context);
+        free((char*)n->url);
+        saved = n;
+        n = n->nextChapter;
+        free(saved);
+    }
+}
+
 void ND_clear_novel(struct Novel* n)
 {
     opencc_convert_utf8_free((char*)n->author);
     opencc_convert_utf8_free((char*)n->start_url);
     opencc_convert_utf8_free((char*)n->title);
     opencc_convert_utf8_free((char*)n->desc);
-    opencc_convert_utf8_free((char*)n->context);
+    ND_clear_chapter(n->chapters);
+}
+
+/*
+ * static int countContextLength(struct Chapter* begin)
+ * {
+ *     int ret = 0;
+ *     while (begin) {
+ *         ret += strlen(begin->context);
+ *         if (begin->title) {
+ *             ret += strlen(begin->title);
+ *         }
+ *         begin = begin->nextChapter;
+ *     }
+ * }
+ */
+
+char* ND_collect_novel(struct Novel* n)
+{
+    char* ret = NULL;
+    struct Chapter* c = n->chapters;
+    if (n->chapters) {
+        struct Buffer out;
+        size_t size;
+
+        initBuffer(&out);
+        while (c) {
+            appendBufferString(&out, c->context);
+            if (c->title) {
+                appendBufferString(&out, "\n");
+                appendBufferString(&out, c->title);
+                appendBufferString(&out, "\n");
+            }
+            c = c->nextChapter;
+        }
+        ret = collectBuffer(&out, &size);
+        clearBuffer(&out);
+    }
+    return ret;
+}
+void ND_free_collected_buffer(char* b)
+{
+    free(b);
 }

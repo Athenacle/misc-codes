@@ -21,7 +21,6 @@ int main(int argc, const char* argv[])
 {
     struct Novel n;
 
-
     if (argc != 2) {
         usage(argv);
     }
@@ -36,7 +35,11 @@ int main(int argc, const char* argv[])
     if (fp == nullptr) {
         std::cerr << "Open file " << title << " failed: " << strerror(errno) << std::endl;
     } else {
-        fprintf(fp, "%s", n.context);
+        char* nc = ND_collect_novel(&n);
+        if (nc) {
+            fprintf(fp, "%s", nc);
+            ND_free_collected_buffer(nc);
+        }
         fclose(fp);
     }
 

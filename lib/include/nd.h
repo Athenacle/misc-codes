@@ -5,14 +5,26 @@
 extern "C" {
 #endif
 
+struct Chapter {
+    const char* title;
+    const char* desc;
+    const char* context;
+    const char* url;
+
+    struct Chapter* nextChapter;
+};
+
 struct Novel {
     const char* title;
     const char* author;
     const char* desc;
 
-    const char* context;
+    struct Chapter* chapters;
     const char* start_url;
 };
+
+char* ND_collect_novel(struct Novel* n);
+void ND_free_collected_buffer(char*);
 
 enum LogLevel { NDL_NONE, NDL_ERROR, NDL_WARNING, NDL_INFO, NDL_DEBUG, NDL_TRACE };
 

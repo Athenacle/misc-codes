@@ -123,18 +123,17 @@ static int thread_func(void* ww, void* curl)
     struct WebsiteWork* www = (struct WebsiteWork*)ww;
     struct HttpClient* hc = (struct HttpClient*)curl;
     struct CurlResponse resp;
-    char* url = (char*)www->node->data;
+    struct Chapter* chapter = (struct Chapter*)www->node->data;
     char* result = NULL;
     int ret = 0;
-    client_fetch(url, hc, &resp);
+    client_fetch(chapter->url, hc, &resp);
     if (resp.status == 200) {
         buildLibXml2(&resp);
         if (resp.doc) {
             result = www->parse(&resp);
             if (result != NULL) {
                 ret = 1;
-                free(url);
-                www->node->data = result;
+                chapter->context = result;
             }
         }
     }
@@ -174,4 +173,17 @@ void website_do_parallel_work(struct LinkList* urls, websiteParsePage parse)
     makeWorks(&work, urls, parse);
     do_parallel_work(&work, websiteCreateThreadSharedFunc, websiteDestroyThreadSharedFunc);
     freeLinkList(&work, releaseWork);
+}
+
+struct Chapters* initChapters(void)
+{
+    struct Chapters* ret = (struct Chapters*)malloc(sizeof(struct Chapters));
+    ret->begin = NULL;
+    return ret;
+}
+struct Chapter* createChapter(void)
+{
+    struct Chapter* c = (struct Chapter*)malloc(sizeof(struct Chapter));
+    memset(c, 0, sizeof(struct Chapter));
+    return c;
 }

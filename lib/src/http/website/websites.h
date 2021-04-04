@@ -25,4 +25,12 @@ typedef char* (*websiteParsePage)(struct CurlResponse*);
 
 void website_do_parallel_work(struct LinkList* urls, websiteParsePage parse);
 
+struct Chapters {
+    struct Chapter* begin;
+};
+
+struct Chapter* createChapter(void);
+struct Chapters* initChapters(void);
+void appendChapters(struct Chapters*, struct Chapter*);
+
 #endif

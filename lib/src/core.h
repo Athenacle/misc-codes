@@ -48,6 +48,10 @@ struct Queue {
     struct LinkList* tail;
 };
 
+struct Chapter* createChapter();
+
+void appendChapter(struct Chapter* chapters, struct Chapter* next);
+
 // utils
 
 void initQueue(struct Queue* q);
@@ -75,6 +79,8 @@ void initBuffer(struct Buffer* buf);
 size_t totalSize(struct Buffer* buf);
 
 void appendBuffer(struct Buffer* buf, const void* data, size_t size);
+
+void appendBufferString(struct Buffer* buf, const char* s);
 
 void clearBuffer(struct Buffer* buf);
 
