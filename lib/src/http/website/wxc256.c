@@ -103,9 +103,12 @@ static void traverseCB_save_content(struct LinkList* list, void* data, void* oth
     free(result);
 }
 
-static char* novel_content_page(struct CurlResponse* resp)
+static char* novel_content_page(struct CurlResponse* resp, struct HttpClient* hc, struct Chapter* c)
 {
     char* ret = NULL;
+    (void)hc;
+    (void)c;
+
     if (resp->doc) {
         xmlNodePtr root = xmlDocGetRootElement(resp->doc);
         xmlNodePtr div = traverse_find_first(root, novel_detail_find_div_book_con_fix);
@@ -129,25 +132,6 @@ static char* novel_content_page(struct CurlResponse* resp)
     return ret;
 }
 
-static void print(struct LinkList* list, void* data, void* buf)
-{
-    (void)list;
-    appendBuffer((struct Buffer*)buf, data, strlen(data));
-}
-
-static struct Chapter* allAtoChapters(struct LinkList* link)
-{
-    struct Chapter* first = (struct Chapter*)link->data;
-
-    while (link) {
-        if (link->next) {
-            ((struct Chapter*)link->data)->nextChapter = link->next->data;
-        }
-        link = link->next;
-    }
-    return first;
-}
-
 static void novel_detail_get_all_urls(xmlNodePtr root, struct Novel* n)
 {
     struct LinkList allA;
@@ -164,7 +148,6 @@ static void novel_detail_get_all_urls(xmlNodePtr root, struct Novel* n)
 
         website_do_parallel_work(&allA, novel_content_page);
         n->chapters = allAtoChapters(&allA);
-        //traverseLinkListWithData(&allA, print, &buf);
     }
     freeLinkList(&allA, NULL);
 }

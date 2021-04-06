@@ -27,22 +27,22 @@ int main(int argc, const char* argv[])
 
     ND_init();
     ND_doit(argv[1], &n);
+    if (n.title) {
+        std::string title(n.title);
+        title.append(".txt");
 
-    std::string title(n.title);
-    title.append(".txt");
-
-    FILE* fp = fopen(title.c_str(), "w");
-    if (fp == nullptr) {
-        std::cerr << "Open file " << title << " failed: " << strerror(errno) << std::endl;
-    } else {
-        char* nc = ND_collect_novel(&n);
-        if (nc) {
-            fprintf(fp, "%s", nc);
-            ND_free_collected_buffer(nc);
+        FILE* fp = fopen(title.c_str(), "w");
+        if (fp == nullptr) {
+            std::cerr << "Open file " << title << " failed: " << strerror(errno) << std::endl;
+        } else {
+            char* nc = ND_collect_novel(&n);
+            if (nc) {
+                fprintf(fp, "%s", nc);
+                ND_free_collected_buffer(nc);
+            }
+            fclose(fp);
         }
-        fclose(fp);
     }
-
     ND_clear_novel(&n);
     ND_shutdown();
 }

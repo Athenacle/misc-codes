@@ -36,6 +36,8 @@ void client_fetch(URL url, struct HttpClient *hc, struct CurlResponse *resp)
     size_t size = strlen(url) + 128;
     char *msg = (char *)malloc(size);
 
+    memset(resp, 0, sizeof(*resp));
+
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf);
     curl_easy_setopt(curl, CURLOPT_DEBUGDATA, url);
@@ -78,9 +80,8 @@ void fetch(URL url, struct CurlResponse *resp)
     size_t size = strlen(url) + 128;
     char *msg = (char *)malloc(size);
 
-    resp->status = 0;
     initBuffer(&buf);
-    resp->html = NULL;
+    memset(resp, 0, sizeof(*resp));
 
     CURLcode res;
     curl_easy_setopt(curl, CURLOPT_URL, url);

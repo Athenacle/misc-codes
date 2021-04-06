@@ -195,12 +195,12 @@ char* ND_collect_novel(struct Novel* n)
 
         initBuffer(&out);
         while (c) {
-            appendBufferString(&out, c->context);
             if (c->title) {
                 appendBufferString(&out, "\n");
                 appendBufferString(&out, c->title);
                 appendBufferString(&out, "\n");
             }
+            appendBufferString(&out, c->context);
             c = c->nextChapter;
         }
         ret = collectBuffer(&out, &size);

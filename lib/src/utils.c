@@ -47,6 +47,9 @@ size_t totalSize(struct Buffer* buf)
 
 void appendBufferString(struct Buffer* buf, const char* s)
 {
+    if (s == NULL) {
+        return;
+    }
     appendBuffer(buf, s, strlen(s));
 }
 
@@ -54,6 +57,10 @@ void appendBuffer(struct Buffer* buf, const void* data, size_t size)
 {
     struct Buffer* last = buf;
     size_t remain;
+
+    if (data == NULL || size == 0) {
+        return;
+    }
 
     while (last->next) {
         last = last->next;
@@ -267,7 +274,7 @@ void* takeQueueFront(struct Queue* q)
     return ret;
 }
 
-int threadCount = 4;
+int threadCount = 6;
 
 struct ParallelWork {
     struct Queue queue;

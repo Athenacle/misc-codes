@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-struct WebsiteHandler* handlers[] = {&wxc256};
+struct WebsiteHandler* handlers[] = {&wxc256, &shuku52vip, &hnxyrz};
 
 void init_websites() {}
 
@@ -11,6 +11,15 @@ static int xml_strcmp(const xmlChar* in, const char* test)
     return xmlStrcmp(in, (const xmlChar*)test) == 0;
 }
 
+int check_p(xmlNodePtr node)
+{
+    return check_tag_name(node, "p");
+}
+
+int check_a(xmlNodePtr node)
+{
+    return check_tag_name(node, "a");
+}
 struct WebsiteHandler* dispatch_url(URL url)
 {
     for (size_t i = 0; i < sizeof(handlers) / sizeof(*handlers); i++) {
@@ -126,11 +135,12 @@ static int thread_func(void* ww, void* curl)
     struct Chapter* chapter = (struct Chapter*)www->node->data;
     char* result = NULL;
     int ret = 0;
+    memset(&resp, 0, sizeof(resp));
     client_fetch(chapter->url, hc, &resp);
     if (resp.status == 200) {
         buildLibXml2(&resp);
         if (resp.doc) {
-            result = www->parse(&resp);
+            result = www->parse(&resp, hc, chapter);
             if (result != NULL) {
                 ret = 1;
                 chapter->context = result;
@@ -150,6 +160,19 @@ static void* buildWork(struct LinkList* url, websiteParsePage parse)
     www->node = url;
     ww->data = www;
     return ww;
+}
+
+struct Chapter* allAtoChapters(struct LinkList* link)
+{
+    struct Chapter* first = (struct Chapter*)link->data;
+
+    while (link) {
+        if (link->next) {
+            ((struct Chapter*)link->data)->nextChapter = link->next->data;
+        }
+        link = link->next;
+    }
+    return first;
 }
 
 void releaseWork(void* d)
