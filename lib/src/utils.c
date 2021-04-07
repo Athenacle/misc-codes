@@ -87,8 +87,9 @@ char* collectBuffer(struct Buffer* buf, size_t* size)
     char* ret = (char*)malloc(s + 1);
     char* ptr = ret;
     struct Buffer* next = buf;
-
-    *size = s;
+    if (size != NULL) {
+        *size = s;
+    }
 
     while (next) {
         size_t count = next->end - next->buffer;
