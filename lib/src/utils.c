@@ -176,21 +176,19 @@ static struct LinkList* createLinkNode(void* data)
     return append;
 }
 
-void traverseLinkListWithData(struct LinkList* list,
-                              void (*func)(struct LinkList*, void*, void*),
-                              void* data)
+void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData fn, void* data)
 {
     while (list) {
-        func(list, list->data, data);
+        fn(list, data);
         list = list->next;
     }
 }
 
 
-void traverseLinkList(struct LinkList* list, void (*func)(struct LinkList*, void*))
+void traverseLinkList(struct LinkList* list, LinkListTraverser fn)
 {
     while (list) {
-        func(list, list->data);
+        fn(list);
         list = list->next;
     }
 }
@@ -275,7 +273,7 @@ void* takeQueueFront(struct Queue* q)
     return ret;
 }
 
-int threadCount = 6;
+int threadCount = 2;
 
 struct ParallelWork {
     struct Queue queue;
@@ -343,10 +341,10 @@ static void* thread_function(void* arg)
     return NULL;
 }
 
-static void traverseCB(struct LinkList* node, void* data)
+static void traverseCB(struct LinkList* node)
 {
-    (void)node;
-    ((struct Work*)data)->retry = 0;
+    struct Work* data = (struct Work*)node->data;
+    data->retry = 0;
 }
 
 void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFree)(void*))

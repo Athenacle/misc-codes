@@ -67,8 +67,9 @@ static int hn_class_fL_con(xmlNodePtr node)
 }
 
 
-static void hn_transform_allA(struct LinkList* node, void* data)
+static void hn_transform_allA(struct LinkList* node)
 {
+    void* data = node->data;
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
         struct Chapter* ch = createChapter();

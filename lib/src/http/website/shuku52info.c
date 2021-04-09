@@ -38,9 +38,9 @@ static void sk52i_do_title(xmlNodePtr node, struct Novel* n)
     n->desc = get_node_text(traverse_find_first(node, sk52i_intro));
 }
 
-static void sk52i_extract_content(struct LinkList* node, void* data, void* ud)
+static void sk52i_extract_content(struct LinkList* node, void* ud)
 {
-    (void)node;
+    void* data = node->data;
     if (data) {
         struct Buffer* buf = (struct Buffer*)ud;
         xmlNodePtr ptr = (xmlNodePtr)data;
@@ -134,8 +134,9 @@ static char* sk52i_content_page(struct CurlResponse* resp, struct HttpClient* hc
     return ret;
 }
 
-static void sk52i_transform(struct LinkList* node, void* data, void* n)
+static void sk52i_transform(struct LinkList* node, void* n)
 {
+    void* data = node->data;
     xmlNodePtr ptr = (xmlNodePtr)(data);
     struct Novel* np = (struct Novel*)n;
     if (ptr) {

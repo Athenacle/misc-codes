@@ -65,8 +65,9 @@ static int novel_detail_find_A_in_catalog(xmlNodePtr node)
     return check_tag_name(node, "a") && check_tag_name(node->parent, "li");
 }
 
-static void novel_detail_transform_aNODE_url(struct LinkList* node, void* data)
+static void novel_detail_transform_aNODE_url(struct LinkList* node)
 {
+    void* data = node->data;
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
         struct Chapter* ch = createChapter();
@@ -87,8 +88,9 @@ static int novel_detail_find_p(xmlNodePtr ptr)
     return check_tag_name(ptr, "p");
 }
 
-static void traverseCB_save_content(struct LinkList* list, void* data, void* other)
+static void traverseCB_save_content(struct LinkList* list, void* other)
 {
+    void* data = list->data;
     xmlNodePtr ptr = (xmlNodePtr)data;
 
     char* result = get_node_text(ptr);

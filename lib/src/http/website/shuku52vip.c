@@ -78,8 +78,9 @@ static int sk52v_find_mulu(xmlNodePtr node)
     return check_tag_name(node, "ul") && check_tag_attr(node, "class", "list");
 }
 
-static void transform(struct LinkList* node, void* data)
+static void transform(struct LinkList* node)
 {
+    void* data = node->data;
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
         struct Chapter* ch = createChapter();
@@ -89,9 +90,9 @@ static void transform(struct LinkList* node, void* data)
     }
 }
 
-static void extract_content(struct LinkList* node, void* data, void* ud)
+static void sk52v_extract_content(struct LinkList* node, void* ud)
 {
-    (void)node;
+    void* data = node->data;
     if (data) {
         struct Buffer* buf = (struct Buffer*)ud;
         xmlNodePtr ptr = (xmlNodePtr)data;
@@ -121,7 +122,7 @@ static char* sk52v_content_page(struct CurlResponse* resp, struct HttpClient* hc
     initLinkList(&list);
     initBuffer(&buf);
     traverse_find_all(content, check_p, &list);
-    traverseLinkListWithData(&list, extract_content, &buf);
+    traverseLinkListWithData(&list, sk52v_extract_content, &buf);
     ret = collectBuffer(&buf, NULL);
     freeLinkList(&list, NULL);
     clearBuffer(&buf);

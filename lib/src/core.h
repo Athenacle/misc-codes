@@ -60,20 +60,27 @@ void* takeQueueFront(struct Queue* q);
 
 void appendQueue(struct Queue* q, void*);
 
+
+// link list
 void initLinkList(struct LinkList* link);
+
+void initLinkListWithCapcity(struct LinkList* link, int cap);
 
 void appendLinkList(struct LinkList* list, void* data);
 
-void traverseLinkList(struct LinkList* list, void (*func)(struct LinkList*, void*));
+typedef void (*LinkListTraverser)(struct LinkList*);
+void traverseLinkList(struct LinkList* list, LinkListTraverser fn);
 
-void traverseLinkListWithData(struct LinkList* list,
-                              void (*func)(struct LinkList*, void*, void*),
-                              void*);
+typedef void (*LinkListTraverserWithData)(struct LinkList*, void*);
+void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData fn, void* data);
 
 void freeLinkList(struct LinkList* list, void (*func)(void*));
 
+void clearLinkList(struct LinkList* list);
+
 size_t countLinkListLength(struct LinkList* list);
 
+// buffer
 void initBuffer(struct Buffer* buf);
 
 size_t totalSize(struct Buffer* buf);

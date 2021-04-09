@@ -31,3 +31,4 @@
 *.out
 *.app
 src/config.h
+lib/src/config.h
