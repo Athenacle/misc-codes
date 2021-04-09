@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-struct WebsiteHandler* handlers[] = {&wxc256, &shuku52vip, &hnxyrz};
+struct WebsiteHandler* handlers[] = {&wxc256, &shuku52vip, &shuku52info, &hnxyrz};
 
 void init_websites() {}
 

@@ -6,6 +6,7 @@
 // sites
 extern struct WebsiteHandler wxc256;
 extern struct WebsiteHandler shuku52vip;
+extern struct WebsiteHandler shuku52info;
 extern struct WebsiteHandler hnxyrz;
 
 typedef int (*traverse_find_test_func)(xmlNodePtr);

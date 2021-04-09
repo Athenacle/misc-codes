@@ -102,6 +102,7 @@ static void download(const char* url, struct Novel* n)
 void ND_doit(const char* url, struct Novel* n)
 {
     memset(n, 0, sizeof(struct Novel));
+    n->start_url = strdup(url);
     download(url, n);
     doOpenCC(n);
 }
@@ -165,25 +166,11 @@ static void ND_clear_chapter(struct Chapter* n)
 void ND_clear_novel(struct Novel* n)
 {
     opencc_convert_utf8_free((char*)n->author);
-    opencc_convert_utf8_free((char*)n->start_url);
+    free((char*)n->start_url);
     opencc_convert_utf8_free((char*)n->title);
     opencc_convert_utf8_free((char*)n->desc);
     ND_clear_chapter(n->chapters);
 }
-
-/*
- * static int countContextLength(struct Chapter* begin)
- * {
- *     int ret = 0;
- *     while (begin) {
- *         ret += strlen(begin->context);
- *         if (begin->title) {
- *             ret += strlen(begin->title);
- *         }
- *         begin = begin->nextChapter;
- *     }
- * }
- */
 
 char* ND_collect_novel(struct Novel* n)
 {
