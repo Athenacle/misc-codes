@@ -13,6 +13,9 @@
 
 struct Buffer* createBuffer(size_t size)
 {
+    PRINT_FUNC_COUNT;
+    PRINT_FUNC_MISC(size);
+
     struct Buffer* ret = (struct Buffer*)malloc(sizeof(struct Buffer));
     if (size > PSIZE) {
         ret->bufferSize = size;
@@ -27,6 +30,8 @@ struct Buffer* createBuffer(size_t size)
 
 void initBuffer(struct Buffer* buf)
 {
+    PRINT_FUNC_COUNT;
+
     buf->bufferSize = PSIZE;
     buf->end = buf->buffer = malloc(buf->bufferSize);
     buf->next = NULL;
@@ -55,6 +60,9 @@ void appendBufferString(struct Buffer* buf, const char* s)
 
 void appendBuffer(struct Buffer* buf, const void* data, size_t size)
 {
+    PRINT_FUNC_COUNT;
+    PRINT_FUNC_MISC(size);
+
     struct Buffer* last = buf;
     size_t remain;
 
@@ -83,6 +91,8 @@ void appendBuffer(struct Buffer* buf, const void* data, size_t size)
 
 char* collectBuffer(struct Buffer* buf, size_t* size)
 {
+    PRINT_FUNC_COUNT;
+
     size_t s = totalSize(buf);
     char* ret = (char*)malloc(s + 1);
     char* ptr = ret;
@@ -105,6 +115,8 @@ char* collectBuffer(struct Buffer* buf, size_t* size)
 
 void clearBuffer(struct Buffer* buf)
 {
+    PRINT_FUNC_COUNT;
+
     struct Buffer* next = buf->next;
     while (next) {
         struct Buffer* nn = next->next;
@@ -156,12 +168,32 @@ int regex_match(const char* string, const char* regex)
 
 void initLinkList(struct LinkList* link)
 {
+    PRINT_FUNC_COUNT;
+
     link->data = NULL;
     link->next = NULL;
 }
 
+void* searchLinkList(struct LinkList* link, LinkListSearchFn fn, const void* data)
+{
+    while (link) {
+        if (fn(link->data, data)) {
+            return link->data;
+        }
+        link = link->next;
+    }
+    return NULL;
+}
+
+void initLinkListWithCapcity(struct LinkList* link, int cap)
+{
+    struct LinkList* block = (struct LinkList*)malloc(cap * sizeof(struct LinkList));
+}
+
 static struct LinkList* findLast(struct LinkList* list)
 {
+    PRINT_FUNC_COUNT;
+
     while (list->next) {
         list = list->next;
     }
@@ -170,6 +202,8 @@ static struct LinkList* findLast(struct LinkList* list)
 
 static struct LinkList* createLinkNode(void* data)
 {
+    PRINT_FUNC_COUNT;
+
     struct LinkList* append = (struct LinkList*)malloc(sizeof(struct LinkList));
     append->data = data;
     append->next = NULL;
@@ -178,6 +212,8 @@ static struct LinkList* createLinkNode(void* data)
 
 void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData fn, void* data)
 {
+    PRINT_FUNC_COUNT;
+
     while (list) {
         fn(list, data);
         list = list->next;
@@ -187,6 +223,8 @@ void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData f
 
 void traverseLinkList(struct LinkList* list, LinkListTraverser fn)
 {
+    PRINT_FUNC_COUNT;
+
     while (list) {
         fn(list);
         list = list->next;
@@ -195,6 +233,8 @@ void traverseLinkList(struct LinkList* list, LinkListTraverser fn)
 
 void appendLinkList(struct LinkList* list, void* data)
 {
+    PRINT_FUNC_COUNT;
+
     if (list->data == NULL) {
         list->data = data;
     } else {
@@ -205,6 +245,8 @@ void appendLinkList(struct LinkList* list, void* data)
 
 void freeLinkList(struct LinkList* list, void (*free_func)(void*))
 {
+    PRINT_FUNC_COUNT;
+
     struct LinkList *next, *tmp;
 
     if (list == NULL) {
@@ -223,6 +265,19 @@ void freeLinkList(struct LinkList* list, void (*free_func)(void*))
         free_func(list->data);
     }
     list->data = list->next = NULL;
+}
+
+void clearLinkList(struct LinkList* list, void (*func)(void*))
+{
+    PRINT_FUNC_COUNT;
+
+    while (list) {
+        if (list->data && func) {
+            func(list->data);
+        }
+        list->data = NULL;
+        list = list->next;
+    }
 }
 
 size_t countLinkListLength(struct LinkList* list)
@@ -273,7 +328,7 @@ void* takeQueueFront(struct Queue* q)
     return ret;
 }
 
-int threadCount = 2;
+int threadCount = 6;
 
 struct ParallelWork {
     struct Queue queue;
@@ -372,4 +427,9 @@ void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFr
         pthread_join(threads[i].tid, &ret);
     }
     free(threads);
+}
+
+void ND_set_thread_count(int tc)
+{
+    threadCount = tc;
 }

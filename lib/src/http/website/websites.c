@@ -20,6 +20,11 @@ int check_a(xmlNodePtr node)
 {
     return check_tag_name(node, "a");
 }
+
+int check_h2(xmlNodePtr node)
+{
+    return check_tag_name(node, "h2");
+}
 struct WebsiteHandler* dispatch_url(URL url)
 {
     for (size_t i = 0; i < sizeof(handlers) / sizeof(*handlers); i++) {
@@ -36,6 +41,8 @@ struct WebsiteHandler* dispatch_url(URL url)
 
 xmlNodePtr traverse_find_first(xmlNodePtr begin, traverse_find_test_func func)
 {
+    PRINT_FUNC_COUNT;
+
     xmlNodePtr cur_node = NULL;
     xmlNodePtr found = NULL;
 
@@ -57,6 +64,8 @@ xmlNodePtr traverse_find_first(xmlNodePtr begin, traverse_find_test_func func)
 
 void traverse_find_all(xmlNodePtr begin, traverse_find_test_func func, struct LinkList* link)
 {
+    PRINT_FUNC_COUNT;
+
     xmlNodePtr cur_node = NULL;
 
     for (cur_node = begin; cur_node; cur_node = cur_node->next) {
@@ -69,22 +78,58 @@ void traverse_find_all(xmlNodePtr begin, traverse_find_test_func func, struct Li
 
 int check_tag_name(xmlNodePtr ptr, const char* name)
 {
+    PRINT_FUNC_COUNT;
+
     return ptr != NULL && ptr->type == XML_ELEMENT_NODE && xml_strcmp(ptr->name, name);
 }
 
+static xmlAttrPtr hasProp(const xmlNodePtr node, const char* name)
+{
+    PRINT_FUNC_COUNT;
+    xmlAttrPtr prop = NULL;
+
+    if ((node == NULL) || (node->type != XML_ELEMENT_NODE) || (name == NULL))
+        return NULL;
+    prop = node->properties;
+    while (prop != NULL) {
+        if (strcmp((const char*)prop->name, name) == 0) {
+            break;
+        }
+        prop = prop->next;
+    }
+    return prop;
+}
+
+
 int check_tag_attr(xmlNodePtr ptr, const char* attr, const char* value)
 {
+    PRINT_FUNC_COUNT;
+
     int ret = 0;
     if (ptr) {
-        xmlChar* v = xmlGetProp(ptr, (const xmlChar*)attr);
-        ret = v && xmlStrstr(v, (const xmlChar*)value);
-        xmlFree(v);
+        xmlAttrPtr have = hasProp(ptr, attr);
+        if (have) {
+            ret = strstr((const char*)have->children->content, value) != NULL;
+        }
     }
     return ret;
 }
 
+char* get_node_text_raw(xmlNodePtr ptr)
+{
+    PRINT_FUNC_COUNT;
+
+    if (ptr && ptr->type == XML_ELEMENT_NODE && ptr->children && ptr->children->next == NULL
+        && ptr->children->type == XML_TEXT_NODE && ptr->children->content) {
+        return ((char*)ptr->children->content);
+    }
+    return NULL;
+}
+
 char* get_node_text(xmlNodePtr ptr)
 {
+    PRINT_FUNC_COUNT;
+
     if (ptr && ptr->type == XML_ELEMENT_NODE && ptr->children && ptr->children->next == NULL
         && ptr->children->type == XML_TEXT_NODE && ptr->children->content) {
         return strdup((const char*)ptr->children->content);
@@ -94,12 +139,12 @@ char* get_node_text(xmlNodePtr ptr)
 
 char* get_node_attr(xmlNodePtr ptr, const char* attr)
 {
+    PRINT_FUNC_COUNT;
+
     if (ptr) {
-        xmlChar* v = xmlGetProp(ptr, (const xmlChar*)attr);
-        if (v != NULL) {
-            char* ret = strdup((const char*)v);
-            xmlFree(v);
-            return ret;
+        xmlAttrPtr have = hasProp(ptr, attr);
+        if (have) {
+            return strdup((const char*)have->children->content);
         }
     }
     return strdup("");
@@ -108,6 +153,8 @@ char* get_node_attr(xmlNodePtr ptr, const char* attr)
 
 void* websiteCreateThreadSharedFunc(int v)
 {
+    PRINT_FUNC_COUNT;
+
     (void)v;
     struct HttpClient* hc = (struct HttpClient*)malloc(sizeof(struct HttpClient));
     client_init(hc);
@@ -116,6 +163,8 @@ void* websiteCreateThreadSharedFunc(int v)
 
 void websiteDestroyThreadSharedFunc(void* s)
 {
+    PRINT_FUNC_COUNT;
+
     client_free((struct HttpClient*)s);
     free(s);
 }

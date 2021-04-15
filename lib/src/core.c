@@ -40,12 +40,108 @@ static void doOpenCC(struct Novel* n)
 {
     CONVERT(title);
     CONVERT(author);
-    CONVERT(start_url);
+    //CONVERT(start_url);
     CONVERT(desc);
     doOpenCCChapters(n->chapters);
 }
 
 #undef CONVERT
+
+#ifndef NDEBUG
+struct FuncCount {
+    char* name;
+    int i;
+    int c;
+};
+
+struct LinkList funcs;
+static pthread_mutex_t* m;
+
+static int search_link_list_func(void* data, const void* in)
+{
+    return data != NULL && strcmp(((struct FuncCount*)data)->name, (char*)in) == 0;
+}
+
+static struct LinkList* findLastDBG(struct LinkList* list)
+{
+    while (list->next) {
+        list = list->next;
+    }
+    return list;
+}
+
+static void appendLinkListDBG(struct LinkList* list, void* data)
+{
+    if (list->data == NULL) {
+        list->data = data;
+    } else {
+        struct LinkList* last = findLastDBG(list);
+        STRUCT_MALLOC_ZERO(LinkList, append);
+        append->data = data;
+        last->next = append;
+    }
+}
+
+static void add_func(const char* fn, int i, int c)
+{
+    void* search = searchLinkList(&funcs, search_link_list_func, fn);
+    if (search) {
+        ((struct FuncCount*)search)->i++;
+    } else {
+        STRUCT_MALLOC(FuncCount, n);
+        n->name = strdup(fn);
+
+        n->i = n->c = 0;
+        n->i += i;
+        n->c += c;
+
+        appendLinkListDBG(&funcs, n);
+    }
+}
+
+void print_func_count(const char* fn, int i, int c)
+{
+    pthread_mutex_lock(m);
+    add_func(fn, i, c);
+    pthread_mutex_unlock(m);
+}
+
+static void clearFunc(void* fn)
+{
+    free(((struct FuncCount*)fn)->name);
+    free(((struct FuncCount*)fn));
+}
+
+void print_func(struct LinkList* l)
+{
+    char buffer[128];
+    struct FuncCount* c = (struct FuncCount*)l->data;
+    snprintf(buffer, 128, "%s - %d - %d", c->name, c->i, c->c);
+    INFO(buffer);
+}
+
+static void clearFuncs()
+{
+    traverseLinkList(&funcs, print_func);
+    freeLinkList(&funcs, clearFunc);
+    pthread_mutex_destroy(m);
+    free(m);
+}
+
+static void initFuncs()
+{
+    pthread_mutexattr_t attr;
+
+    m = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(m, &attr);
+    pthread_mutexattr_destroy(&attr);
+
+    SET_ZERO(&funcs);
+}
+
+#endif
 
 static void ND_default_logger(int level, const char* msg)
 {
@@ -63,6 +159,10 @@ ND_logger_func logger = ND_default_logger;
 
 void ND_init()
 {
+#ifndef NDEBUG
+    initFuncs();
+#endif
+
     srand(time(NULL));
     init_websites();
     curl_global_init(CURL_GLOBAL_ALL);
@@ -77,6 +177,10 @@ void ND_shutdown()
     curl_global_cleanup();
     xmlCleanupParser();
     opencc_close(cc);
+
+#ifndef NDEBUG
+    clearFuncs();
+#endif
 }
 
 static void download(const char* url, struct Novel* n)

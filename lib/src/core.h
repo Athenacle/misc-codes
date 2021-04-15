@@ -11,6 +11,17 @@
 
 #include <libxml/HTMLparser.h>
 
+#ifdef HAVE_BZERO
+#define SET_ZERO(ptr) bzero(ptr, sizeof(*ptr))
+#else
+#define SET_ZERO(ptr) memset(ptr, 0, sizeof(*ptr))
+#endif
+
+#define STRUCT_MALLOC(type, name) struct type* name = (struct type*)malloc(sizeof(struct type))
+#define STRUCT_MALLOC_ZERO(type, name) \
+    STRUCT_MALLOC(type, name);         \
+    SET_ZERO(name)
+
 // logger
 extern ND_logger_func logger;
 
@@ -74,9 +85,12 @@ void traverseLinkList(struct LinkList* list, LinkListTraverser fn);
 typedef void (*LinkListTraverserWithData)(struct LinkList*, void*);
 void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData fn, void* data);
 
+typedef int (*LinkListSearchFn)(void*, const void*);
+void* searchLinkList(struct LinkList* link, LinkListSearchFn fn, const void* data);
+
 void freeLinkList(struct LinkList* list, void (*func)(void*));
 
-void clearLinkList(struct LinkList* list);
+void clearLinkList(struct LinkList* list, void (*func)(void*));
 
 size_t countLinkListLength(struct LinkList* list);
 
@@ -142,5 +156,23 @@ struct WebsiteHandler {
 void init_websites();
 
 struct WebsiteHandler* dispatch_url(URL url);
+
+#ifndef NDEBUG
+
+void print_func_count(const char* fn, int i, int c);
+
+#define PRINT_FUNC_MISC(c)                \
+    do {                                  \
+        print_func_count(__func__, 0, c); \
+    } while (0)
+
+#define PRINT_FUNC_COUNT                  \
+    do {                                  \
+        print_func_count(__func__, 1, 0); \
+    } while (0)
+#else
+#define PRINT_FUNC_MISC(c)
+#define PRINT_FUNC_COUNT
+#endif
 
 #endif

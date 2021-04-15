@@ -43,6 +43,9 @@ void ND_clear_novel(struct Novel* n);
 // user-agents
 const char* ND_random_ua();
 
+// utils
+void ND_set_thread_count(int tc);
+
 #ifdef __cplusplus
 }
 #endif

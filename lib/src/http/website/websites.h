@@ -20,9 +20,11 @@ int check_tag_attr(xmlNodePtr ptr, const char* attr, const char* value);
 
 int check_a(xmlNodePtr);
 int check_p(xmlNodePtr);
+int check_h2(xmlNodePtr);
 
 char* get_node_attr(xmlNodePtr ptr, const char* attr);
 char* get_node_text(xmlNodePtr ptr);
+char* get_node_text_raw(xmlNodePtr ptr);
 
 void* websiteCreateThreadSharedFunc(int);
 void websiteDestroyThreadSharedFunc(void*);

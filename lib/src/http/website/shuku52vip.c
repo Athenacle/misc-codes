@@ -96,10 +96,11 @@ static void sk52v_extract_content(struct LinkList* node, void* ud)
     if (data) {
         struct Buffer* buf = (struct Buffer*)ud;
         xmlNodePtr ptr = (xmlNodePtr)data;
-        char* c = get_node_text(ptr);
-        appendBufferString(buf, c);
-        appendBufferString(buf, "\n");
-        free(c);
+        char* c = get_node_text_raw(ptr);
+        if (c) {
+            appendBufferString(buf, c);
+            appendBuffer(buf, "\n", 1);
+        }
     }
 }
 

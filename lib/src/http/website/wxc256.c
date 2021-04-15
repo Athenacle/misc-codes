@@ -93,16 +93,14 @@ static void traverseCB_save_content(struct LinkList* list, void* other)
     void* data = list->data;
     xmlNodePtr ptr = (xmlNodePtr)data;
 
-    char* result = get_node_text(ptr);
-    size_t size = strlen(result);
+    char* result = get_node_text_raw(ptr);
 
     (void)list;
 
-    if (size > 0) {
-        appendBuffer((struct Buffer*)other, result, size);
+    if (result != NULL) {
+        appendBufferString((struct Buffer*)other, result);
         appendBuffer((struct Buffer*)other, "\n", 1);
     }
-    free(result);
 }
 
 static char* novel_content_page(struct CurlResponse* resp, struct HttpClient* hc, struct Chapter* c)
