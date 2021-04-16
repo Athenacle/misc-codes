@@ -129,41 +129,37 @@ void clearBuffer(struct Buffer* buf)
     buf->next = NULL;
 }
 
-int regex_match(const char* string, const char* regex)
+
+void* regex_compile(const char* regex)
 {
-    pcre2_code* re;
     int errornumber;
     PCRE2_SIZE erroroffset;
 
-    int rc;
-
-    pcre2_match_data* match_data;
-
-    re = pcre2_compile(
+    return pcre2_compile(
         (PCRE2_SPTR)regex, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
-
-    if (re == NULL) {
-        PCRE2_UCHAR buffer[256];
-        size_t bufs = strlen(regex) + 256;
-        char* msgbuf = (char*)malloc(bufs);
-        const char* errfmt = "PCRE2 regex `%s` compilaion failed at offset %d: %s";
-
-        pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
-
-        snprintf(msgbuf, bufs, errfmt, regex, (int)erroroffset, buffer);
-        ERROR(msgbuf);
-        free(msgbuf);
+}
+void regex_free(void* regex)
+{
+    pcre2_code_free(regex);
+}
+int regex_match_compiled(const char* string, void* regex)
+{
+    if (regex == NULL) {
         return 0;
     }
-
-    match_data = pcre2_match_data_create_from_pattern(re, NULL);
-
-    rc = pcre2_match(re, (PCRE2_SPTR)string, strlen(string), 0, 0, match_data, NULL);
-
+    int rc = 0;
+    pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+    rc = pcre2_match(regex, (PCRE2_SPTR)string, strlen(string), 0, 0, match_data, NULL);
     pcre2_match_data_free(match_data);
-    pcre2_code_free(re);
-
     return rc > 0;
+}
+
+int regex_match(const char* string, const char* regex)
+{
+    pcre2_code* re = regex_compile(regex);
+    int rc = regex_match_compiled(string, re);
+    regex_free(re);
+    return rc;
 }
 
 void initLinkList(struct LinkList* link)
@@ -187,15 +183,29 @@ void* searchLinkList(struct LinkList* link, LinkListSearchFn fn, const void* dat
 
 void initLinkListWithCapcity(struct LinkList* link, int cap)
 {
-    struct LinkList* block = (struct LinkList*)malloc(cap * sizeof(struct LinkList));
+    if (cap > 1 && cap < 100) {
+        struct LinkList* block = (struct LinkList*)malloc((cap - 1) * sizeof(struct LinkList));
+        link->next = block;
+    } else {
+        link->next = NULL;
+    }
+    link->data = NULL;
 }
 
 static struct LinkList* findLast(struct LinkList* list)
 {
     PRINT_FUNC_COUNT;
 
-    while (list->next) {
-        list = list->next;
+    while (1) {
+        if (list->data == NULL) {
+            return list;
+        } else {
+            if (list->next == NULL) {
+                return list;
+            } else {
+                list = list->next;
+            }
+        }
     }
     return list;
 }
@@ -239,7 +249,11 @@ void appendLinkList(struct LinkList* list, void* data)
         list->data = data;
     } else {
         struct LinkList* last = findLast(list);
-        last->next = createLinkNode(data);
+        if (last->data == NULL) {
+            last->data = data;
+        } else {
+            last->next = createLinkNode(data);
+        }
     }
 }
 
@@ -278,6 +292,19 @@ void clearLinkList(struct LinkList* list, void (*func)(void*))
         list->data = NULL;
         list = list->next;
     }
+}
+
+void* getLinkListNth(struct LinkList* list, int n)
+{
+    if (n < 0) {
+        return NULL;
+    }
+    while (n > 0 && list != NULL) {
+        list = list->next;
+        n--;
+    }
+
+    return list ? list->data : NULL;
 }
 
 size_t countLinkListLength(struct LinkList* list)

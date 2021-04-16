@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
+
+include(FindPkgConfig)
+
 set(CMAKE_CXX_STANDARD 20)
 enable_language(CXX C)
 
@@ -30,6 +33,11 @@ include(Check)
 
 add_subdirectory(lib)
 
-add_executable(downloader downloader.cc)
-target_link_libraries(downloader ndown)
+add_executable(downloader downloader.cc utils.cc)
+target_link_libraries(downloader ndown spdlog::spdlog)
 target_include_directories(downloader PRIVATE lib/include)
+
+find_package(spdlog REQUIRED)
+add_executable(jjwxc jjwxc.cc utils.cc)
+target_link_libraries(jjwxc ndown spdlog::spdlog)
+target_include_directories(jjwxc PRIVATE lib/include )

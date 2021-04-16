@@ -18,10 +18,11 @@ static size_t writeCB(void *data, size_t size, size_t nmemb, void *userp)
 void client_init(struct HttpClient *hc)
 {
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCB);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua());
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCB), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua()), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""), CURLE_OK);
 
     hc->curl = curl;
 }
@@ -38,15 +39,15 @@ void client_fetch(URL url, struct HttpClient *hc, struct CurlResponse *resp)
 
     memset(resp, 0, sizeof(*resp));
 
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf);
-    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, url);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_URL, url), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_DEBUGDATA, url), CURLE_OK);
 
     resp->htmlLength = resp->status = 0;
     resp->html = resp->responseHeader = NULL;
 
     res = curl_easy_perform(curl);
-    res = curl_easy_perform(curl);
+    //res = curl_easy_perform(curl);
     if (res == CURLE_OK) {
         resp->html = collectBuffer(&buf, &resp->htmlLength);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
@@ -84,11 +85,12 @@ void fetch(URL url, struct CurlResponse *resp)
     memset(resp, 0, sizeof(*resp));
 
     CURLcode res;
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCB);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua());
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_URL, url), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCB), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua()), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""), CURLE_OK);
 
     res = curl_easy_perform(curl);
     if (res == CURLE_OK) {

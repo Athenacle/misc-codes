@@ -31,6 +31,29 @@ extern ND_logger_func logger;
 #define DEBUG(msg) logger(NDL_DEBUG, (msg))
 #define TRACE(msg) logger(NDL_TRACE, (msg))
 
+#ifndef NDEBUG
+
+void trace_expresion(const char* ex, const char* file, int line, int value, int should);
+
+#define TRACE_EXPR(expr, should)                                      \
+    do {                                                              \
+        trace_expresion(#expr, __FILE__, __LINE__, ((expr)), should); \
+    } while (0)
+
+#else
+#define TRACE_EXPR(expr, should)  \
+    do {                          \
+        if (should != ((expr))) { \
+            WARN(#expr);          \
+        }                         \
+    } while (0)
+#endif
+
+#define CORE_BUFFER_SIZE (1 << 11)
+
+char* getCoreTempBuffer();
+void freeCoreTempBuffer(void*);
+
 // types
 typedef const char* URL;
 
@@ -88,6 +111,8 @@ void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData f
 typedef int (*LinkListSearchFn)(void*, const void*);
 void* searchLinkList(struct LinkList* link, LinkListSearchFn fn, const void* data);
 
+void* getLinkListNth(struct LinkList* link, int n);
+
 void freeLinkList(struct LinkList* list, void (*func)(void*));
 
 void clearLinkList(struct LinkList* list, void (*func)(void*));
@@ -112,6 +137,10 @@ void initCurlResponse(struct CurlResponse* resp);
 void clearCurlResponse(struct CurlResponse* resp);
 
 int regex_match(const char* string, const char* regex);
+
+void* regex_compile(const char* regex);
+void regex_free(void* regex);
+int regex_match_compiled(const char* string, void* regex);
 
 // thread work
 
@@ -156,6 +185,9 @@ struct WebsiteHandler {
 void init_websites();
 
 struct WebsiteHandler* dispatch_url(URL url);
+
+void jjwxc_doit_buffer(void* buffer, unsigned long size, struct JJwxc* j);
+
 
 #ifndef NDEBUG
 

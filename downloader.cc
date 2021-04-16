@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cstring>
 
+#include "utils.h"
+
 namespace
 {
     [[noreturn]] void usage(const char* argv[])
@@ -24,25 +26,12 @@ int main(int argc, const char* argv[])
     if (argc != 2) {
         usage(argv);
     }
+    spdlog::set_level(spdlog::level::trace);
+    ND_set_log_function(logger_func);
 
     ND_init();
     ND_doit(argv[1], &n);
-    if (n.title) {
-        std::string title(n.title);
-        title.append(".txt");
-
-        FILE* fp = fopen(title.c_str(), "w");
-        if (fp == nullptr) {
-            std::cerr << "Open file " << title << " failed: " << strerror(errno) << std::endl;
-        } else {
-            char* nc = ND_collect_novel(&n);
-            if (nc) {
-                fprintf(fp, "%s", nc);
-                ND_free_collected_buffer(nc);
-            }
-            fclose(fp);
-        }
-    }
-    ND_clear_novel(&n);
+    saveNovel(&n);
+    ND_novel_free(&n);
     ND_shutdown();
 }
