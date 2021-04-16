@@ -14,7 +14,7 @@ static int check(URL url)
 
 static int sk52v_title(xmlNodePtr node)
 {
-    return check_tag_name(node, "h1") && check_tag_attr(node, "class", "article-title");
+    return CHECK_TAG_NAME(node, "h1") && check_tag_attr(node, "class", "article-title");
 }
 
 static void sk52v_do_title(struct Novel* n, xmlNodePtr node)
@@ -48,7 +48,7 @@ static void sk52v_do_title(struct Novel* n, xmlNodePtr node)
 
 static int sk52v_find_desc(xmlNodePtr node)
 {
-    return check_tag_name(node, "article") && check_tag_attr(node, "class", "article-content");
+    return CHECK_TAG_NAME(node, "article") && check_tag_attr(node, "class", "article-content");
 }
 
 static void sk52v_desc(xmlNodePtr node, struct Novel* n)
@@ -75,7 +75,7 @@ static void sk52v_desc(xmlNodePtr node, struct Novel* n)
 
 static int sk52v_find_mulu(xmlNodePtr node)
 {
-    return check_tag_name(node, "ul") && check_tag_attr(node, "class", "list");
+    return CHECK_TAG_NAME(node, "ul") && check_tag_attr(node, "class", "list");
 }
 
 static void transform(struct LinkList* node)
@@ -132,7 +132,7 @@ static char* sk52v_content_page(struct CurlResponse* resp, struct HttpClient* hc
 
 static int sk52v_a_href(xmlNodePtr ptr)
 {
-    return check_a(ptr) && check_tag_name(ptr->parent, "li");
+    return check_a(ptr) && CHECK_TAG_NAME(ptr->parent, "li");
 }
 
 static void sk52v_mulu(xmlNodePtr node, struct Novel* n)

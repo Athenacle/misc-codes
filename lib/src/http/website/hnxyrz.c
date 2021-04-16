@@ -18,22 +18,22 @@ static int check(URL url)
 
 static int hn_detail_div_con_box(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr, "div") && check_tag_attr(ptr, "class", "con_box");
+    return CHECK_TAG_NAME(ptr, "div") && check_tag_attr(ptr, "class", "con_box");
 }
 
 static int hn_check_parent_div_top(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr->parent, "div") && check_tag_attr(ptr->parent, "class", "top");
+    return CHECK_TAG_NAME(ptr->parent, "div") && check_tag_attr(ptr->parent, "class", "top");
 }
 
 static int hn_title_h3(xmlNodePtr ptr)
 {
-    return hn_check_parent_div_top(ptr) && check_tag_name(ptr, "h3");
+    return hn_check_parent_div_top(ptr) && CHECK_TAG_NAME(ptr, "h3");
 }
 
 static int hn_author_p(xmlNodePtr ptr)
 {
-    return hn_check_parent_div_top(ptr) && check_tag_name(ptr, "p");
+    return hn_check_parent_div_top(ptr) && CHECK_TAG_NAME(ptr, "p");
 }
 
 static void hn_title(xmlNodePtr head, struct Novel* n)
@@ -63,7 +63,7 @@ static void hn_author(xmlNodePtr head, struct Novel* n)
 
 static int hn_class_fL_con(xmlNodePtr node)
 {
-    return check_tag_name(node, "div") && check_tag_attr(node, "class", "fL_con");
+    return CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "fL_con");
 }
 
 
@@ -81,7 +81,7 @@ static void hn_transform_allA(struct LinkList* node)
 
 static int hn_find_txt(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr, "div") && check_tag_attr(ptr, "id", "txt");
+    return CHECK_TAG_NAME(ptr, "div") && check_tag_attr(ptr, "id", "txt");
 }
 
 static const char* find(unsigned int in)
@@ -151,21 +151,21 @@ static void do_save(xmlNodePtr node, struct Buffer* buf)
     if (node == NULL) {
         return;
     }
-    if (check_tag_name(node, "p")) {
+    if (CHECK_TAG_NAME(node, "p")) {
         xmlNodePtr n = node->children;
         appendBufferString(buf, "\n");
         while (n) {
             if (n->type == XML_TEXT_NODE) {
                 appendBufferString(buf, (char*)n->content);
             } else if (n->type == XML_ELEMENT_NODE) {
-                if (check_tag_name(n, "i")) {
+                if (CHECK_TAG_NAME(n, "i")) {
                     appendBufferString(buf, dispatch(n->children->content));
                 }
             }
             n = n->next;
         }
     } else {
-        if (check_tag_name(node, "i")) {
+        if (CHECK_TAG_NAME(node, "i")) {
             appendBufferString(buf, dispatch(node->children->content));
         } else if (node->type == XML_TEXT_NODE) {
             appendBufferString(buf, (char*)node->content);
@@ -191,7 +191,7 @@ static void hn_content_do_page(xmlNodePtr root, struct Buffer* buf)
 
 static int hn_find_next(xmlNodePtr node)
 {
-    return check_tag_name(node, "a") && check_tag_attr(node, "class", "url_next");
+    return CHECK_TAG_NAME(node, "a") && check_tag_attr(node, "class", "url_next");
 }
 
 static void hm_check_next_page(xmlNodePtr doc,

@@ -1,56 +1,50 @@
 #include "websites.h"
 
 #include <string.h>
-// #include <libxml/HTMLparser.h>
 #include <libxml/HTMLtree.h>
 
 struct WebsiteHandler* handlers[] = {&wxc256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
 
 void init_websites() {}
 
-static int xml_strcmp(const xmlChar* in, const char* test)
-{
-    return xmlStrcmp(in, (const xmlChar*)test) == 0;
-}
-
 int check_p(xmlNodePtr node)
 {
-    return check_tag_name(node, "p");
+    return CHECK_TAG_NAME(node, "p");
 }
 
 int check_a(xmlNodePtr node)
 {
-    return check_tag_name(node, "a");
+    return CHECK_TAG_NAME(node, "a");
 }
 
 int check_h2(xmlNodePtr node)
 {
-    return check_tag_name(node, "h2");
+    return CHECK_TAG_NAME(node, "h2");
 }
 
 int check_span(xmlNodePtr node)
 {
-    return check_tag_name(node, "span");
+    return CHECK_TAG_NAME(node, "span");
 }
 
 int check_td(xmlNodePtr node)
 {
-    return check_tag_name(node, "td");
+    return CHECK_TAG_NAME(node, "td");
 }
 
 int check_li(xmlNodePtr node)
 {
-    return check_tag_name(node, "li");
+    return CHECK_TAG_NAME(node, "li");
 }
 
 int check_table(xmlNodePtr node)
 {
-    return check_tag_name(node, "table");
+    return CHECK_TAG_NAME(node, "table");
 }
 
 int check_font(xmlNodePtr node)
 {
-    return check_tag_name(node, "font");
+    return CHECK_TAG_NAME(node, "font");
 }
 struct WebsiteHandler* dispatch_url(URL url)
 {
@@ -105,7 +99,7 @@ xmlNodePtr findByID(xmlNodePtr node, const char* id)
 
 static int findBody(xmlNodePtr node)
 {
-    return check_tag_name(node, "body");
+    return CHECK_TAG_NAME(node, "body");
 }
 
 xmlNodePtr childFindNext(xmlNodePtr begin, traverse_find_test_func func)
@@ -220,13 +214,6 @@ void traverse_find_all(xmlNodePtr begin, traverse_find_test_func func, struct Li
     }
 }
 
-int check_tag_name(xmlNodePtr ptr, const char* name)
-{
-    PRINT_FUNC_COUNT;
-
-    return ptr != NULL && ptr->type == XML_ELEMENT_NODE && xml_strcmp(ptr->name, name);
-}
-
 static xmlAttrPtr hasProp(const xmlNodePtr node, const char* name)
 {
     PRINT_FUNC_COUNT;
@@ -243,7 +230,6 @@ static xmlAttrPtr hasProp(const xmlNodePtr node, const char* name)
     }
     return prop;
 }
-
 
 int check_tag_attr(xmlNodePtr ptr, const char* attr, const char* value)
 {
@@ -398,7 +384,7 @@ static int thread_func(void* ww, void* curl)
     struct Chapter* chapter = (struct Chapter*)www->node->data;
     char* result = NULL;
     int ret = 0;
-    if (chapter->url && strlen(chapter->url) > 0) {
+    if (chapter && chapter->url && strlen(chapter->url) > 0) {
         client_fetch(chapter->url, hc, &resp);
         if (resp.status == 200) {
             buildLibXml2(&resp);

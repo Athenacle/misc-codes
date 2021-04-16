@@ -17,12 +17,12 @@ static int check(URL url)
 
 static int novel_detail_find_title_node(xmlNodePtr node)
 {
-    return check_tag_name(node, "h1") && check_tag_attr(node, "class", "art_tit");
+    return CHECK_TAG_NAME(node, "h1") && check_tag_attr(node, "class", "art_tit");
 }
 
 static int novel_detail_find_author_node(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "class", "bookinfo")
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "class", "bookinfo")
            && node->children->type == XML_TEXT_NODE;
 }
 
@@ -40,12 +40,12 @@ static void novel_detail_author(xmlNodePtr head, struct Novel* n)
 
 static int novel_detail_find_div_art_head(xmlNodePtr root)
 {
-    return check_tag_name(root, "div") && check_tag_attr(root, "class", "art_head");
+    return CHECK_TAG_NAME(root, "div") && check_tag_attr(root, "class", "art_head");
 }
 
 static int novel_detail_find_desc_node(xmlNodePtr node)
 {
-    return check_tag_name(node, "p");
+    return CHECK_TAG_NAME(node, "p");
 }
 
 
@@ -57,12 +57,12 @@ static void novel_detail_desc(xmlNodePtr head, struct Novel* n)
 
 static int novel_detail_find_ul_catalog(xmlNodePtr node)
 {
-    return check_tag_name(node, "ul") && check_tag_attr(node, "class", "catalog");
+    return CHECK_TAG_NAME(node, "ul") && check_tag_attr(node, "class", "catalog");
 }
 
 static int novel_detail_find_A_in_catalog(xmlNodePtr node)
 {
-    return check_tag_name(node, "a") && check_tag_name(node->parent, "li");
+    return CHECK_TAG_NAME(node, "a") && CHECK_TAG_NAME(node->parent, "li");
 }
 
 static void novel_detail_transform_aNODE_url(struct LinkList* node)
@@ -79,13 +79,13 @@ static void novel_detail_transform_aNODE_url(struct LinkList* node)
 // <div class="book_con fix"
 static int novel_detail_find_div_book_con_fix(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr, "div") && check_tag_attr(ptr, "class", "book_con")
+    return CHECK_TAG_NAME(ptr, "div") && check_tag_attr(ptr, "class", "book_con")
            && check_tag_attr(ptr, "class", "fix");
 }
 
 static int novel_detail_find_p(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr, "p");
+    return CHECK_TAG_NAME(ptr, "p");
 }
 
 static void traverseCB_save_content(struct LinkList* list, void* other)

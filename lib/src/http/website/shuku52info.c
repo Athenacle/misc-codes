@@ -15,19 +15,19 @@ static int check(URL url)
 
 static int sk52i_title(xmlNodePtr node)
 {
-    return check_tag_name(node, "h1") && check_tag_attr(node, "class", "booktitle");
+    return CHECK_TAG_NAME(node, "h1") && check_tag_attr(node, "class", "booktitle");
 }
 
 static int sk52i_author(xmlNodePtr node)
 {
-    return check_a(node) && check_tag_name(node->parent, "p")
+    return check_a(node) && CHECK_TAG_NAME(node->parent, "p")
            && check_tag_attr(node, "class", "red")
            && check_tag_attr(node->parent, "class", "booktag");
 }
 
 static int sk52i_intro(xmlNodePtr node)
 {
-    return check_tag_name(node, "p") && check_tag_attr(node, "class", "bookintro")
+    return CHECK_TAG_NAME(node, "p") && check_tag_attr(node, "class", "bookintro")
            && check_tag_attr(node->parent, "class", "bookinfo");
 }
 
@@ -52,7 +52,7 @@ static void sk52i_extract_content(struct LinkList* node, void* ud)
 
 static int sk52i_content_text(xmlNodePtr node)
 {
-    return node->type == XML_TEXT_NODE && check_tag_name(node->parent, "div")
+    return node->type == XML_TEXT_NODE && CHECK_TAG_NAME(node->parent, "div")
            && check_tag_attr(node->parent, "class", "readcontent");
 }
 
@@ -155,7 +155,7 @@ static void sk52i_transform(struct LinkList* node, void* n)
 
 static int sk52i_a(xmlNodePtr node)
 {
-    return check_a(node) && check_tag_name(node->parent, "dd");
+    return check_a(node) && CHECK_TAG_NAME(node->parent, "dd");
 }
 
 static void sk52i_context(xmlNodePtr root, struct Novel* n)

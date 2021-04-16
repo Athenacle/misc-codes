@@ -25,7 +25,11 @@ xmlNodePtr childFindPrev(xmlNodePtr begin, traverse_find_test_func func);
 
 xmlNodePtr findByID(xmlNodePtr node, const char* id);
 
-int check_tag_name(xmlNodePtr ptr, const char* name);
+
+#define CHECK_TAG_NAME(node, check)                      \
+    (((node != NULL) && (node->type == XML_ELEMENT_NODE) \
+      && (0 == strcmp((char*)node->name, check))))
+
 int check_tag_attr(xmlNodePtr ptr, const char* attr, const char* value);
 
 int check_a(xmlNodePtr);

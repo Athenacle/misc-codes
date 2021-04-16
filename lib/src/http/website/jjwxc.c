@@ -16,47 +16,47 @@ static int check(URL url)
 
 static int jf_rightul_printright(xmlNodePtr node)
 {
-    return check_tag_name(node, "ul") && check_tag_attr(node, "name", "printright");
+    return CHECK_TAG_NAME(node, "ul") && check_tag_attr(node, "name", "printright");
 }
 
 static int jf_r_genre(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "itemprop", "genre");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "genre");
 }
 
 static int jf_r_series(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "itemprop", "series");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "series");
 }
 
 static int jf_r_status(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "itemprop", "updataStatus");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "updataStatus");
 }
 
 static int jf_r_words(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "itemprop", "wordCount");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "wordCount");
 }
 
 static int jf_span_bigtext(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "class", "bigtext");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "class", "bigtext");
 }
 
 static int jf_span_articleSection(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "itemprop", "articleSection");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "articleSection");
 }
 
 static int jf_tb_oneboolt(xmlNodePtr node)
 {
-    return check_tag_name(node, "table") && check_tag_attr(node, "id", "oneboolt");
+    return CHECK_TAG_NAME(node, "table") && check_tag_attr(node, "id", "oneboolt");
 }
 
 static int jf_span_author(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "itemprop", "author");
+    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "author");
 }
 
 #define JPR(obj, field)                                               \
@@ -98,7 +98,7 @@ static void jj_print(struct JJwxc* jjwxc)
 
 static int jf_tr_readtd(xmlNodePtr node)
 {
-    return check_tag_name(node, "td") && check_tag_attr(node, "class", "readtd");
+    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "class", "readtd");
 }
 
 static int jj_novel_extract_word_count(xmlNodePtr node)
@@ -131,7 +131,7 @@ static int jj_novel_extract_word_count(xmlNodePtr node)
 
 static int fd_div_smallreadbody(xmlNodePtr node)
 {
-    return check_tag_name(node, "div") && check_tag_attr(node, "class", "smallreadbody");
+    return CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "smallreadbody");
 }
 
 static void* regex;
@@ -164,7 +164,7 @@ void jj_extract_tags(struct LinkList* list, void* ptr)
 
 static int jf_meta_dataModified(xmlNodePtr node)
 {
-    return check_tag_name(node, "meta") && check_tag_attr(node, "itemprop", "dateModified")
+    return CHECK_TAG_NAME(node, "meta") && check_tag_attr(node, "itemprop", "dateModified")
            && get_node_attr_raw(node, "content") != NULL;
 }
 
@@ -195,7 +195,7 @@ static void jj_novel_full_detail_tag(xmlNodePtr left, struct JJwxc* jj)
 
 static int jf_chapter(xmlNodePtr node)
 {
-    return check_tag_name(node, "tr") && check_tag_attr(node, "itemprop", "chapter");
+    return CHECK_TAG_NAME(node, "tr") && check_tag_attr(node, "itemprop", "chapter");
 }
 static int jf_chapter_span_headline(xmlNodePtr node)
 {
@@ -203,90 +203,95 @@ static int jf_chapter_span_headline(xmlNodePtr node)
 }
 static int jf_chapter_word_count(xmlNodePtr node)
 {
-    return check_tag_name(node, "td") && check_tag_attr(node, "itemprop", "wordCount");
+    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "itemprop", "wordCount");
 }
 
 /*
  *static int jf_chapter_click(xmlNodePtr node)
  *{
- *    return check_tag_name(node, "td") && check_tag_attr(node, "class", "chapterclick");
+ *    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "class", "chapterclick");
  *}
  */
 
 static int jf_chapter_time(xmlNodePtr node)
 {
-    return check_tag_name(node, "td") && check_tag_attr(node, "title", "章");
+    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "title", "章");
 }
 
 void jj_chapter_transform(struct LinkList* list)
 {
     xmlNodePtr node = (xmlNodePtr)list->data;
-    STRUCT_MALLOC_ZERO(Chapter, ch);
-
-    xmlNodePtr idN = childFindNext(node->children, check_td);
-    xmlNodePtr headN = childFindNext(idN, check_td);
-    xmlNodePtr urlN = chainFind(headN, jf_chapter_span_headline, check_a, NULL);
-
-    int id = jj_novel_extract_word_count(idN);
     char* lb = getCoreTempBuffer();
 
-    ch->id = id;
+    if (node != NULL) {
+        STRUCT_MALLOC_ZERO(Chapter, ch);
 
-    if (urlN != NULL) {
-        xmlNodePtr descN = childFindNext(headN, check_td);
-        xmlNodePtr wordN = chainFind(node, jf_chapter_word_count, NULL);
-        xmlNodePtr timeN =
-            traverse_find_first(traverse_find_child(node, jf_chapter_time), check_span);
-        char* url = get_node_attr_raw(urlN, "href");
-        int viped = 0;
+        xmlNodePtr idN = childFindNext(node->children, check_td);
+        xmlNodePtr headN = childFindNext(idN, check_td);
+        xmlNodePtr urlN = chainFind(headN, jf_chapter_span_headline, check_a, NULL);
 
-        if (url != NULL) {
-            ch->url = get_node_attr(urlN, "href");
-        } else if (NULL != traverse_find_first(urlN->parent, check_font)) {
-            viped = 1;
+        int id = jj_novel_extract_word_count(idN);
+        ch->id = id;
+
+        if (urlN != NULL) {
+            xmlNodePtr descN = childFindNext(headN, check_td);
+            xmlNodePtr wordN = chainFind(node, jf_chapter_word_count, NULL);
+            xmlNodePtr timeN =
+                traverse_find_first(traverse_find_child(node, jf_chapter_time), check_span);
+            char* url = get_node_attr_raw(urlN, "href");
+            int viped = 0;
+
+            if (url != NULL) {
+                ch->url = get_node_attr(urlN, "href");
+            } else if (NULL != traverse_find_first(urlN->parent, check_font)) {
+                viped = 1;
+            }
+            ch->desc = get_node_text(descN);
+            ch->time = get_node_text(timeN);
+            ch->title = get_node_text(urlN);
+            ch->words = jj_novel_extract_word_count(wordN);
+
+            snprintf(lb,
+                     CORE_BUFFER_SIZE,
+                     "Chapter #%d(%s): Title: %s, Description: %s, Words: %d, UpdateTime: %s",
+                     id,
+                     viped ? "VIP" : ch->url,
+                     ch->title,
+                     ch->desc,
+                     ch->words,
+                     ch->time);
+            DEBUG(lb);
+
+            if (viped) {
+                ch->context = strdup(ch->desc);
+            }
+        } else {
+            xmlNodePtr lockN = traverse_find_first(headN, check_font);
+            char* reason = get_node_attr_raw(lockN, "title");
+
+            ch->title = strdup("锁");
+
+            if (lockN && reason) {
+                snprintf(lb, CORE_BUFFER_SIZE, "Chapter %d Locked: %s", id, reason);
+                WARN(lb);
+
+                snprintf(lb, CORE_BUFFER_SIZE, "已锁：%s\n\n", skipBlank((unsigned char*)reason));
+
+                ch->context = strdup(lb);
+                ch->desc = strdup(reason);
+            }
         }
-        ch->desc = get_node_text(descN);
-        ch->time = get_node_text(timeN);
-        ch->title = get_node_text(urlN);
-        ch->words = jj_novel_extract_word_count(wordN);
-
-        snprintf(lb,
-                 CORE_BUFFER_SIZE,
-                 "Chapter #%d(%s): Title: %s, Description: %s, Words: %d, UpdateTime: %s",
-                 id,
-                 viped ? "VIP" : ch->url,
-                 ch->title,
-                 ch->desc,
-                 ch->words,
-                 ch->time);
-        DEBUG(lb);
-
-        if (viped) {
-            ch->context = strdup(ch->desc);
-        }
+        list->data = ch;
     } else {
-        xmlNodePtr lockN = traverse_find_first(headN, check_font);
-        char* reason = get_node_attr_raw(lockN, "title");
-
-        ch->title = strdup("锁");
-
-        if (lockN && reason) {
-            snprintf(lb, CORE_BUFFER_SIZE, "Chapter %d Locked: %s", id, reason);
-            WARN(lb);
-
-            snprintf(lb, CORE_BUFFER_SIZE, "已锁：%s\n\n", skipBlank((unsigned char*)reason));
-
-            ch->context = strdup(lb);
-            ch->desc = strdup(reason);
-        }
+        snprintf(lb, CORE_BUFFER_SIZE, "EMPTY xmlNodePtr found in %s, please check", __func__);
+        ERROR(lb);
     }
     freeCoreTempBuffer(lb);
-    list->data = ch;
 }
 
 static int jj_div_noveltext(xmlNodePtr node)
 {
-    return check_tag_name(node, "div") && check_tag_attr(node, "class", "noveltext");
+    return CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "noveltext");
 }
 
 static void jj_append_node_text(xmlNodePtr node, struct Buffer* buf)
@@ -297,9 +302,9 @@ static void jj_append_node_text(xmlNodePtr node, struct Buffer* buf)
             if (*line) {
                 appendBufferString(buf, line);
             }
-        } else if (check_tag_name(node, "br")) {
+        } else if (CHECK_TAG_NAME(node, "br")) {
             appendBufferString(buf, "\n");
-        } else if (check_tag_name(node, "div") && check_tag_attr(node, "class", "readsmall")) {
+        } else if (CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "readsmall")) {
             appendBufferString(buf, "\n\n**************************************\n");
             jj_append_node_text(node->children, buf);
         }

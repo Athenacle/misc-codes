@@ -192,18 +192,31 @@ static void doAtExit()
     }
 }
 
+static void skipNewline(char* begin)
+{
+    char* end = begin;
+    while (*end) {
+        end++;
+    }
+    if (*(end - 1) == '\n') {
+        *(end - 1) = 0;
+    }
+}
 
 void xmlErrorPrint(MAYBE_UNUSED void* ctx, const char* msg, ...)
 {
     char* buf = getCoreTempBuffer();
-    int len = snprintf(buf, CORE_BUFFER_SIZE, "libxml2 error. %s", msg);
+    int len = snprintf(buf, CORE_BUFFER_SIZE, "libxml2: %s", msg);
+    skipNewline(buf);
 
     va_list ap;
     va_start(ap, msg);
-    vsnprintf(buf + len, CORE_BUFFER_SIZE - len, buf, ap);
+    vsnprintf(buf + len + 1, CORE_BUFFER_SIZE - len - 1, buf, ap);
     va_end(ap);
-    ERROR(buf);
+    WARN(buf + len + 1);
+    freeCoreTempBuffer(buf);
 }
+
 static xmlGenericErrorFunc errFunc = xmlErrorPrint;
 
 void ND_init()
