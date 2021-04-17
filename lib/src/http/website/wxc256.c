@@ -12,65 +12,66 @@
 
 static int check(URL url)
 {
-    return regex_match(url, WEBSITE_REGEX);
+    return matchRegex(url, WEBSITE_REGEX);
 }
 
 static int novel_detail_find_title_node(xmlNodePtr node)
 {
-    return check_tag_name(node, "h1") && check_tag_attr(node, "class", "art_tit");
+    return CHECK_TAG_NAME(node, "h1") && htmlCheckNodeAttr(node, "class", "art_tit");
 }
 
 static int novel_detail_find_author_node(xmlNodePtr node)
 {
-    return check_tag_name(node, "span") && check_tag_attr(node, "class", "bookinfo")
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "class", "bookinfo")
            && node->children->type == XML_TEXT_NODE;
 }
 
 static void novel_detail_title(xmlNodePtr head, struct Novel* n)
 {
-    xmlNodePtr pointer = traverse_find_first(head, novel_detail_find_title_node);
-    n->title = get_node_text(pointer);
+    xmlNodePtr pointer = htmlFindFirst(head, novel_detail_find_title_node);
+    n->title = getNodeText(pointer);
 }
 
 static void novel_detail_author(xmlNodePtr head, struct Novel* n)
 {
-    xmlNodePtr pointer = traverse_find_first(head, novel_detail_find_author_node);
-    n->author = get_node_text(pointer);
+    xmlNodePtr pointer = htmlFindFirst(head, novel_detail_find_author_node);
+    n->author = getNodeText(pointer);
 }
 
 static int novel_detail_find_div_art_head(xmlNodePtr root)
 {
-    return check_tag_name(root, "div") && check_tag_attr(root, "class", "art_head");
+    return CHECK_TAG_NAME(root, "div") && htmlCheckNodeAttr(root, "class", "art_head");
 }
 
 static int novel_detail_find_desc_node(xmlNodePtr node)
 {
-    return check_tag_name(node, "p");
+    return CHECK_TAG_NAME(node, "p");
 }
 
 
 static void novel_detail_desc(xmlNodePtr head, struct Novel* n)
 {
-    xmlNodePtr pointer = traverse_find_first(head, novel_detail_find_desc_node);
-    n->desc = get_node_text(pointer);
+    xmlNodePtr pointer = htmlFindFirst(head, novel_detail_find_desc_node);
+    n->desc = getNodeText(pointer);
 }
 
 static int novel_detail_find_ul_catalog(xmlNodePtr node)
 {
-    return check_tag_name(node, "ul") && check_tag_attr(node, "class", "catalog");
+    return CHECK_TAG_NAME(node, "ul") && htmlCheckNodeAttr(node, "class", "catalog");
 }
 
 static int novel_detail_find_A_in_catalog(xmlNodePtr node)
 {
-    return check_tag_name(node, "a") && check_tag_name(node->parent, "li");
+    return CHECK_TAG_NAME(node, "a") && CHECK_TAG_NAME(node->parent, "li");
 }
 
-static void novel_detail_transform_aNODE_url(struct LinkList* node, void* data)
+static void novel_detail_transform_aNODE_url(struct LinkList* node)
 {
+    void* data = node->data;
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
         struct Chapter* ch = createChapter();
-        ch->url = get_node_attr(ptr, "href");
+        ch->url = getNodeAttr(ptr, "href");
         node->data = ch;
     }
 }
@@ -78,37 +79,39 @@ static void novel_detail_transform_aNODE_url(struct LinkList* node, void* data)
 // <div class="book_con fix"
 static int novel_detail_find_div_book_con_fix(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr, "div") && check_tag_attr(ptr, "class", "book_con")
-           && check_tag_attr(ptr, "class", "fix");
+    return CHECK_TAG_NAME(ptr, "div") && htmlCheckNodeAttr(ptr, "class", "book_con")
+           && htmlCheckNodeAttr(ptr, "class", "fix");
 }
 
 static int novel_detail_find_p(xmlNodePtr ptr)
 {
-    return check_tag_name(ptr, "p");
+    return CHECK_TAG_NAME(ptr, "p");
 }
 
-static void traverseCB_save_content(struct LinkList* list, void* data, void* other)
+static void traverseCB_save_content(struct LinkList* list, void* other)
 {
+    void* data = list->data;
     xmlNodePtr ptr = (xmlNodePtr)data;
 
-    char* result = get_node_text(ptr);
-    size_t size = strlen(result);
+    char* result = getNodeTextRaw(ptr);
 
     (void)list;
 
-    if (size > 0) {
-        appendBuffer((struct Buffer*)other, result, size);
+    if (result != NULL) {
+        appendBufferString((struct Buffer*)other, result);
         appendBuffer((struct Buffer*)other, "\n", 1);
     }
-    free(result);
 }
 
-static char* novel_content_page(struct CurlResponse* resp)
+static char* novel_content_page(struct CurlResponse* resp, struct HttpClient* hc, struct Chapter* c)
 {
     char* ret = NULL;
-    if (resp->doc) {
-        xmlNodePtr root = xmlDocGetRootElement(resp->doc);
-        xmlNodePtr div = traverse_find_first(root, novel_detail_find_div_book_con_fix);
+    (void)hc;
+    (void)c;
+
+    if (resp->data.parser.doc) {
+        xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
+        xmlNodePtr div = htmlFindFirst(root, novel_detail_find_div_book_con_fix);
         if (div) {
             struct LinkList ps;
             struct Buffer buf;
@@ -117,7 +120,7 @@ static char* novel_content_page(struct CurlResponse* resp)
             initBuffer(&buf);
             initLinkList(&ps);
 
-            traverse_find_all(div, novel_detail_find_p, &ps);
+            htmlFindAll(div, novel_detail_find_p, &ps);
             traverseLinkListWithData(&ps, traverseCB_save_content, &buf);
 
             ret = collectBuffer(&buf, &total);
@@ -129,25 +132,6 @@ static char* novel_content_page(struct CurlResponse* resp)
     return ret;
 }
 
-static void print(struct LinkList* list, void* data, void* buf)
-{
-    (void)list;
-    appendBuffer((struct Buffer*)buf, data, strlen(data));
-}
-
-static struct Chapter* allAtoChapters(struct LinkList* link)
-{
-    struct Chapter* first = (struct Chapter*)link->data;
-
-    while (link) {
-        if (link->next) {
-            ((struct Chapter*)link->data)->nextChapter = link->next->data;
-        }
-        link = link->next;
-    }
-    return first;
-}
-
 static void novel_detail_get_all_urls(xmlNodePtr root, struct Novel* n)
 {
     struct LinkList allA;
@@ -156,15 +140,14 @@ static void novel_detail_get_all_urls(xmlNodePtr root, struct Novel* n)
 
     initLinkList(&allA);
 
-    xmlNodePtr catalog = traverse_find_first(root, novel_detail_find_ul_catalog);
+    xmlNodePtr catalog = htmlFindFirst(root, novel_detail_find_ul_catalog);
     if (catalog) {
-        traverse_find_all(catalog, novel_detail_find_A_in_catalog, &allA);
+        htmlFindAll(catalog, novel_detail_find_A_in_catalog, &allA);
         traverseLinkList(&allA, novel_detail_transform_aNODE_url);
 
 
-        website_do_parallel_work(&allA, novel_content_page);
+        websiteParallelWork(&allA, novel_content_page);
         n->chapters = allAtoChapters(&allA);
-        //traverseLinkListWithData(&allA, print, &buf);
     }
     freeLinkList(&allA, NULL);
 }
@@ -173,10 +156,10 @@ static void novel_detail(struct CurlResponse* resp, struct Novel* n)
 {
     char buffer[1024];
 
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     assert(root != NULL);
 
-    xmlNodePtr head = traverse_find_first(root, novel_detail_find_div_art_head);
+    xmlNodePtr head = htmlFindFirst(root, novel_detail_find_div_art_head);
     if (head) {
         novel_detail_title(head, n);
         novel_detail_author(head, n);
@@ -191,7 +174,7 @@ static void novel_detail(struct CurlResponse* resp, struct Novel* n)
 
 static void doit(URL url, struct CurlResponse* resp, struct Novel* n)
 {
-    if (regex_match(url, WEBSITE_NOVEL_DETAIL_REGEX)) {
+    if (matchRegex(url, WEBSITE_NOVEL_DETAIL_REGEX)) {
         INFO("WXC256 novel detail.");
         novel_detail(resp, n);
     }

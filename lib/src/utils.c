@@ -9,12 +9,15 @@
 
 #include <pthread.h>
 
-#define PSIZE (1 << 14)
+#define DEFAULT_BUFFER_BLOCK_SIZE (1 << 14)
 
 struct Buffer* createBuffer(size_t size)
 {
+    PRINT_FUNC_COUNT;
+    PRINT_FUNC_MISC(size);
+
     struct Buffer* ret = (struct Buffer*)malloc(sizeof(struct Buffer));
-    if (size > PSIZE) {
+    if (size > DEFAULT_BUFFER_BLOCK_SIZE) {
         ret->bufferSize = size;
         ret->buffer = ret->end = malloc(size);
         ret->next = NULL;
@@ -27,7 +30,9 @@ struct Buffer* createBuffer(size_t size)
 
 void initBuffer(struct Buffer* buf)
 {
-    buf->bufferSize = PSIZE;
+    PRINT_FUNC_COUNT;
+
+    buf->bufferSize = DEFAULT_BUFFER_BLOCK_SIZE;
     buf->end = buf->buffer = malloc(buf->bufferSize);
     buf->next = NULL;
 }
@@ -47,13 +52,23 @@ size_t totalSize(struct Buffer* buf)
 
 void appendBufferString(struct Buffer* buf, const char* s)
 {
+    if (s == NULL) {
+        return;
+    }
     appendBuffer(buf, s, strlen(s));
 }
 
 void appendBuffer(struct Buffer* buf, const void* data, size_t size)
 {
+    PRINT_FUNC_COUNT;
+    PRINT_FUNC_MISC(size);
+
     struct Buffer* last = buf;
     size_t remain;
+
+    if (data == NULL || size == 0) {
+        return;
+    }
 
     while (last->next) {
         last = last->next;
@@ -76,12 +91,15 @@ void appendBuffer(struct Buffer* buf, const void* data, size_t size)
 
 char* collectBuffer(struct Buffer* buf, size_t* size)
 {
+    PRINT_FUNC_COUNT;
+
     size_t s = totalSize(buf);
     char* ret = (char*)malloc(s + 1);
     char* ptr = ret;
     struct Buffer* next = buf;
-
-    *size = s;
+    if (size != NULL) {
+        *size = s;
+    }
 
     while (next) {
         size_t count = next->end - next->buffer;
@@ -97,6 +115,8 @@ char* collectBuffer(struct Buffer* buf, size_t* size)
 
 void clearBuffer(struct Buffer* buf)
 {
+    PRINT_FUNC_COUNT;
+
     struct Buffer* next = buf->next;
     while (next) {
         struct Buffer* nn = next->next;
@@ -109,96 +129,140 @@ void clearBuffer(struct Buffer* buf)
     buf->next = NULL;
 }
 
-int regex_match(const char* string, const char* regex)
+
+void* compileRegex(const char* regex)
 {
-    pcre2_code* re;
     int errornumber;
     PCRE2_SIZE erroroffset;
 
-    int rc;
-
-    pcre2_match_data* match_data;
-
-    re = pcre2_compile(
+    return pcre2_compile(
         (PCRE2_SPTR)regex, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
+}
 
-    if (re == NULL) {
-        PCRE2_UCHAR buffer[256];
-        size_t bufs = strlen(regex) + 256;
-        char* msgbuf = (char*)malloc(bufs);
-        const char* errfmt = "PCRE2 regex `%s` compilaion failed at offset %d: %s";
+void freeRegex(void* regex)
+{
+    pcre2_code_free(regex);
+}
 
-        pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
-
-        snprintf(msgbuf, bufs, errfmt, regex, (int)erroroffset, buffer);
-        ERROR(msgbuf);
-        free(msgbuf);
+int matchRegexCompiled(const char* string, void* regex)
+{
+    if (regex == NULL) {
         return 0;
     }
-
-    match_data = pcre2_match_data_create_from_pattern(re, NULL);
-
-    rc = pcre2_match(re, (PCRE2_SPTR)string, strlen(string), 0, 0, match_data, NULL);
-
+    int rc = 0;
+    pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+    rc = pcre2_match(regex, (PCRE2_SPTR)string, strlen(string), 0, 0, match_data, NULL);
     pcre2_match_data_free(match_data);
-    pcre2_code_free(re);
-
     return rc > 0;
+}
+
+int matchRegex(const char* string, const char* regex)
+{
+    pcre2_code* re = compileRegex(regex);
+    int rc = matchRegexCompiled(string, re);
+    freeRegex(re);
+    return rc;
 }
 
 void initLinkList(struct LinkList* link)
 {
+    PRINT_FUNC_COUNT;
+
     link->data = NULL;
     link->next = NULL;
 }
 
+void* searchLinkList(struct LinkList* link, LinkListSearchFn fn, const void* data)
+{
+    while (link) {
+        if (fn(link->data, data)) {
+            return link->data;
+        }
+        link = link->next;
+    }
+    return NULL;
+}
+
+void initLinkListWithCapcity(struct LinkList* link, int cap)
+{
+    if (cap > 1 && cap < 100) {
+        struct LinkList* block = (struct LinkList*)malloc((cap - 1) * sizeof(struct LinkList));
+        link->next = block;
+    } else {
+        link->next = NULL;
+    }
+    link->data = NULL;
+}
+
 static struct LinkList* findLast(struct LinkList* list)
 {
-    while (list->next) {
-        list = list->next;
+    PRINT_FUNC_COUNT;
+
+    while (1) {
+        if (list->data == NULL) {
+            return list;
+        } else {
+            if (list->next == NULL) {
+                return list;
+            } else {
+                list = list->next;
+            }
+        }
     }
     return list;
 }
 
 static struct LinkList* createLinkNode(void* data)
 {
+    PRINT_FUNC_COUNT;
+
     struct LinkList* append = (struct LinkList*)malloc(sizeof(struct LinkList));
     append->data = data;
     append->next = NULL;
     return append;
 }
 
-void traverseLinkListWithData(struct LinkList* list,
-                              void (*func)(struct LinkList*, void*, void*),
-                              void* data)
+void traverseLinkListWithData(struct LinkList* list, LinkListTraverserWithData fn, void* data)
 {
+    PRINT_FUNC_COUNT;
+
     while (list) {
-        func(list, list->data, data);
+        fn(list, data);
         list = list->next;
     }
 }
 
 
-void traverseLinkList(struct LinkList* list, void (*func)(struct LinkList*, void*))
+void traverseLinkList(struct LinkList* list, LinkListTraverser fn)
 {
+    PRINT_FUNC_COUNT;
+
     while (list) {
-        func(list, list->data);
+        fn(list);
         list = list->next;
     }
 }
 
 void appendLinkList(struct LinkList* list, void* data)
 {
+    PRINT_FUNC_COUNT;
+
     if (list->data == NULL) {
         list->data = data;
     } else {
         struct LinkList* last = findLast(list);
-        last->next = createLinkNode(data);
+        if (last->data == NULL) {
+            last->data = data;
+        } else {
+            last->next = createLinkNode(data);
+        }
     }
 }
 
 void freeLinkList(struct LinkList* list, void (*free_func)(void*))
 {
+    PRINT_FUNC_COUNT;
+
     struct LinkList *next, *tmp;
 
     if (list == NULL) {
@@ -217,6 +281,32 @@ void freeLinkList(struct LinkList* list, void (*free_func)(void*))
         free_func(list->data);
     }
     list->data = list->next = NULL;
+}
+
+void clearLinkList(struct LinkList* list, void (*func)(void*))
+{
+    PRINT_FUNC_COUNT;
+
+    while (list) {
+        if (list->data && func) {
+            func(list->data);
+        }
+        list->data = NULL;
+        list = list->next;
+    }
+}
+
+void* getLinkListNth(struct LinkList* list, int n)
+{
+    if (n < 0) {
+        return NULL;
+    }
+    while (n > 0 && list != NULL) {
+        list = list->next;
+        n--;
+    }
+
+    return list ? list->data : NULL;
 }
 
 size_t countLinkListLength(struct LinkList* list)
@@ -267,7 +357,7 @@ void* takeQueueFront(struct Queue* q)
     return ret;
 }
 
-int threadCount = 4;
+int threadCount = 6;
 
 struct ParallelWork {
     struct Queue queue;
@@ -311,7 +401,7 @@ struct ThreadLocal {
     struct ParallelWork* work;
 };
 
-static void* thread_function(void* arg)
+static void* threadWorker(void* arg)
 {
     struct ThreadLocal* thr = (struct ThreadLocal*)(arg);
     struct ParallelWork* works = thr->work;
@@ -335,13 +425,13 @@ static void* thread_function(void* arg)
     return NULL;
 }
 
-static void traverseCB(struct LinkList* node, void* data)
+static void traverseCB(struct LinkList* node)
 {
-    (void)node;
-    ((struct Work*)data)->retry = 0;
+    struct Work* data = (struct Work*)node->data;
+    data->retry = 0;
 }
 
-void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFree)(void*))
+void doParallelWork(struct LinkList* work, void* (*tsCreate)(int), void (*tsFree)(void*))
 {
     struct ThreadLocal* threads =
         (struct ThreadLocal*)malloc(threadCount * sizeof(struct ThreadLocal));
@@ -358,7 +448,7 @@ void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFr
     for (int i = 0; i < threadCount; i++) {
         threads[i].work = &workObject;
         threads[i].index = i;
-        pthread_create(&threads[i].tid, NULL, thread_function, threads + i);
+        pthread_create(&threads[i].tid, NULL, threadWorker, threads + i);
     }
 
     for (int i = 0; i < threadCount; i++) {
@@ -366,4 +456,9 @@ void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFr
         pthread_join(threads[i].tid, &ret);
     }
     free(threads);
+}
+
+void ND_set_thread_count(int tc)
+{
+    threadCount = tc;
 }
