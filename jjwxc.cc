@@ -48,7 +48,6 @@ int main()
 
     struct JJwxc jj;
     ND_init();
-    // ND_set_thread_count(1);
     ND_jjwxc_doit_buffer(data, s, &jj);
 
     unloadHTML(data, s);

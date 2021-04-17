@@ -109,8 +109,8 @@ static char* novel_content_page(struct CurlResponse* resp, struct HttpClient* hc
     (void)hc;
     (void)c;
 
-    if (resp->doc) {
-        xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    if (resp->data.parser.doc) {
+        xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
         xmlNodePtr div = traverse_find_first(root, novel_detail_find_div_book_con_fix);
         if (div) {
             struct LinkList ps;
@@ -156,7 +156,7 @@ static void novel_detail(struct CurlResponse* resp, struct Novel* n)
 {
     char buffer[1024];
 
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     assert(root != NULL);
 
     xmlNodePtr head = traverse_find_first(root, novel_detail_find_div_art_head);

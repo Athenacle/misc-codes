@@ -384,11 +384,11 @@ static int thread_func(void* ww, void* curl)
     struct Chapter* chapter = (struct Chapter*)www->node->data;
     char* result = NULL;
     int ret = 0;
+
     if (chapter && chapter->url && strlen(chapter->url) > 0) {
         client_fetch(chapter->url, hc, &resp);
-        if (resp.status == 200) {
-            buildLibXml2(&resp);
-            if (resp.doc) {
+        if (resp.status == 200 && resp.type == TEXT_HTML) {
+            if (resp.data.parser.doc) {
                 result = www->parse(&resp, hc, chapter);
                 if (result != NULL) {
                     ret = 1;

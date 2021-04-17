@@ -279,8 +279,7 @@ static void download(const char* url, struct Novel* n)
     if (handler) {
         initCurlResponse(&resp);
         fetch(url, &resp);
-        if (resp.status == 200) {
-            buildLibXml2(&resp);
+        if (resp.status == 200 && resp.type == TEXT_HTML) {
             handler->doIt(url, &resp, n);
         }
         clearCurlResponse(&resp);
@@ -314,39 +313,19 @@ void ND_set_log_function(ND_logger_func func)
 
 void clearCurlResponse(struct CurlResponse* resp)
 {
-    if (resp->html) {
-        free(resp->html);
-    }
-    if (resp->doc) {
-        xmlFreeDoc(resp->doc);
-    }
-    if (resp->responseHeader) {
-        free(resp->responseHeader);
+    if (resp->type == TEXT_HTML) {
+        htmlFreeParserCtxt(resp->data.parser.ctx);
+        xmlFreeDoc(resp->data.parser.doc);
+        resp->data.parser.ctx = NULL;
+        resp->data.parser.doc = NULL;
+    } else {
+        clearBuffer(&resp->data.buf);
     }
 }
 
 void initCurlResponse(struct CurlResponse* resp)
 {
     memset(resp, 0, sizeof(struct CurlResponse));
-}
-
-#define HPARSER_OPTION (HTML_PARSE_NOWARNING | HTML_PARSE_NOERROR | HTML_PARSE_RECOVER)
-
-void buildLibXml2(struct CurlResponse* resp)
-{
-    resp->doc = NULL;
-    if (resp->status == 200) {
-        htmlParserCtxtPtr ctx = htmlNewParserCtxt();
-
-        resp->doc =
-            htmlCtxtReadMemory(ctx, resp->html, resp->htmlLength, NULL, NULL, HPARSER_OPTION);
-        htmlFreeParserCtxt(ctx);
-        if (xmlDocGetRootElement(resp->doc) == NULL) {
-            ERROR("Empty HTML tree.");
-            xmlFreeDoc(resp->doc);
-            resp->doc = NULL;
-        }
-    }
 }
 
 static void ND_clear_chapter(struct Chapter* n)

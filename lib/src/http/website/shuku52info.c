@@ -87,10 +87,9 @@ static void sk52i_check_next(xmlNodePtr node,
         initLinkList(&list);
 
         client_fetch(url, hc, &resp);
-        if (resp.status == 200) {
-            buildLibXml2(&resp);
-            if (resp.doc) {
-                xmlNodePtr root = xmlDocGetRootElement(resp.doc);
+        if (resp.status == 200 && resp.type == TEXT_HTML) {
+            if (resp.data.parser.doc) {
+                xmlNodePtr root = xmlDocGetRootElement(resp.data.parser.doc);
                 traverse_find_all(root, sk52i_content_text, &list);
                 traverseLinkListWithData(&list, sk52i_extract_content, buf);
                 sk52i_check_next(root, c, hc, buf);
@@ -108,7 +107,7 @@ static char* sk52i_content_page(struct CurlResponse* resp, struct HttpClient* hc
     (void)hc;
     (void)c;
 
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     assert(root);
     struct LinkList list;
     struct Buffer buf;
@@ -171,7 +170,7 @@ static void sk52i_context(xmlNodePtr root, struct Novel* n)
 
 static void sk52i_detail(struct CurlResponse* resp, struct Novel* n)
 {
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     if (root) {
         sk52i_do_title(root, n);
         sk52i_context(root, n);

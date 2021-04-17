@@ -316,7 +316,7 @@ static char* jj_do_page(struct CurlResponse* resp,
                         MAYBE_UNUSED struct HttpClient* hc,
                         MAYBE_UNUSED struct Chapter* c)
 {
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     xmlNodePtr body = traverse_find_body(root);
     xmlNodePtr novelTextN = chainFind(body, jf_tb_oneboolt, jj_div_noveltext, NULL);
 
@@ -355,7 +355,7 @@ static void jj_novel_chapter_list(xmlNodePtr node, struct Novel* n)
 static void jj_novel_detail(struct CurlResponse* resp, struct Novel* n)
 {
     struct LinkList tds;
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     if (root == NULL) {
         return;
     }
@@ -496,12 +496,12 @@ void jjwxc_doit_buffer(void* buffer, unsigned long size, struct JJwxc* j)
     SET_ZERO(&resp);
     SET_ZERO(j);
 
-    resp.htmlLength = size;
     resp.status = 200;
-    resp.html = malloc(size);
-    memcpy(resp.html, buffer, size);
-    buildLibXml2(&resp);
-    jj_novel_full_detail(resp.doc, j);
+    resp.type = TEXT_HTML;
+
+    TRACE_EXPR(inputHttpParser(&resp.data.parser, buffer, -1 * size), 0);
+
+    jj_novel_full_detail(resp.data.parser.doc, j);
     jj_novel_detail(&resp, &j->n);
     jj_print(j);
     clearCurlResponse(&resp);
@@ -523,8 +523,7 @@ void ND_jjwxc_doit(const char* url, struct JJwxc* jj)
 
     initCurlResponse(&resp);
     fetch(url, &resp);
-    if (resp.status == 200) {
-        buildLibXml2(&resp);
+    if (resp.status == 200 && resp.type == TEXT_HTML) {
         jj_doit(url, &resp, &jj->n);
     }
     clearCurlResponse(&resp);

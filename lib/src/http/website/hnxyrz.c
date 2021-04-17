@@ -209,10 +209,9 @@ static void hm_check_next_page(xmlNodePtr doc,
             strcat(nextUrl, href);
             client_fetch(nextUrl, hc, &res);
 
-            if (res.status == 200) {
-                buildLibXml2(&res);
-                if (res.doc) {
-                    xmlNodePtr root = xmlDocGetRootElement(res.doc);
+            if (res.status == 200 && res.type == TEXT_HTML) {
+                if (res.data.parser.doc) {
+                    xmlNodePtr root = xmlDocGetRootElement(res.data.parser.doc);
                     hn_content_do_page(root, buf);
                     hm_check_next_page(root, hc, buf, c);
                 }
@@ -229,7 +228,7 @@ static char* hn_content_first_page(struct CurlResponse* resp,
                                    struct Chapter* c)
 {
     char* ret = NULL;
-    xmlNodePtr root = traverse_find_first(xmlDocGetRootElement(resp->doc), hn_find_txt);
+    xmlNodePtr root = traverse_find_first(xmlDocGetRootElement(resp->data.parser.doc), hn_find_txt);
     if (root) {
         struct Buffer buf;
         size_t size;
@@ -263,8 +262,8 @@ static void hn_do_download(xmlNodePtr node, struct Novel* n)
 
 static void hn_detail(struct CurlResponse* resp, struct Novel* n)
 {
-    if (resp->status == 200 && resp->doc != NULL) {
-        xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    if (resp->status == 200 && resp->type == TEXT_HTML && resp->data.parser.doc != NULL) {
+        xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
         assert(root != NULL);
 
         xmlNodePtr head = traverse_find_first(root, hn_detail_div_con_box);

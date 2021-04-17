@@ -109,7 +109,7 @@ static char* sk52v_content_page(struct CurlResponse* resp, struct HttpClient* hc
     (void)hc;
     (void)c;
 
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     assert(root);
     struct LinkList list;
     struct Buffer buf;
@@ -151,7 +151,7 @@ static void sk52v_mulu(xmlNodePtr node, struct Novel* n)
 
 static void sk52v_detail(struct CurlResponse* resp, struct Novel* n)
 {
-    xmlNodePtr root = xmlDocGetRootElement(resp->doc);
+    xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     if (root) {
         sk52v_do_title(n, traverse_find_first(root, sk52v_title));
         sk52v_desc(root, n);

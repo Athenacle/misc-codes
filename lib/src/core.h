@@ -57,13 +57,6 @@ void freeCoreTempBuffer(void*);
 // types
 typedef const char* URL;
 
-struct CurlResponse {
-    char* responseHeader;
-    size_t htmlLength;
-    int status;
-    char* html;
-    htmlDocPtr doc;
-};
 
 struct Buffer {
     char* buffer;
@@ -71,6 +64,27 @@ struct Buffer {
     unsigned int bufferSize;
     struct Buffer* next;
 };
+
+enum HttpResponseType { CT_NONE = 0, TEXT_HTML, IMAGE_JPEG, APP_JSON, TEXT_PLAIN };
+
+struct HtmlParser {
+    htmlParserCtxtPtr ctx;
+    htmlDocPtr doc;
+};
+
+struct CurlResponse {
+    char* url;
+    char* contentType;
+    int status;
+    size_t contentLength;
+    enum HttpResponseType type;
+    union {
+        struct HtmlParser parser;
+        struct Buffer buf;
+    } data;
+};
+
+int inputHttpParser(struct HtmlParser*, const void* data, int length);
 
 struct LinkList {
     struct LinkList* next;
