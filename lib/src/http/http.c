@@ -73,13 +73,13 @@ static size_t headerStrlen(char *str)
     }
     return 0;
 }
-#define MIN(a, b) (((a) <= (b)) ? ((a)) : ((b)))
-
+#define MIN(a, b) (((((hs = ((a)))) <= ((b))) ? ((hs)) : ((b))))  // check function curlHeaderCB
 #define MATCH(in, text) (strncasecmp(in, text, MIN(headerStrlen(in), sizeof(text) - 1)) == 0)
 
 static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
 {
     size_t numbytes = size * nitems;
+    size_t hs = 0;
 
     struct CurlResponse *resp = (struct CurlResponse *)userdata;
 
@@ -87,16 +87,16 @@ static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
         char *hv = b + sizeof(CONTENT_TYPE);
         char c;
         while ((c = *hv) != '\r') {
-            if (isblank(c) || c == ':') {
+            if (unlikely(isblank(c) || c == ':')) {
                 hv++;
             } else {
                 break;
             }
         }
 
-        if (MATCH(hv, CT_TEXT_HTML)) {
+        if (likely(MATCH(hv, CT_TEXT_HTML))) {
             resp->type = TEXT_HTML;
-        } else if (MATCH(hv, CT_IMAGE_JPEG)) {
+        } else if (likely(MATCH(hv, CT_IMAGE_JPEG))) {
             resp->type = IMAGE_JPEG;
         } else if (MATCH(hv, CT_APP_JSON)) {
             resp->type = APP_JSON;
@@ -121,8 +121,10 @@ static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
 
     return numbytes;
 }
+#undef MATCH
+#undef MIN
 
-static void init_curl(CURL *curl)
+static void initCurl(CURL *curl)
 {
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlWriteDataCB), CURLE_OK);
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua()), CURLE_OK);
@@ -131,11 +133,11 @@ static void init_curl(CURL *curl)
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""), CURLE_OK);
 }
 
-void client_init(struct HttpClient *hc)
+void initHttpClient(struct HttpClient *hc)
 {
     CURL *curl = curl_easy_init();
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L), CURLE_OK);
-    init_curl(curl);
+    initCurl(curl);
 
     hc->curl = curl;
 }
@@ -144,7 +146,7 @@ void client_init(struct HttpClient *hc)
 #define FAILED_FMT "Get URL %s failed, error %s."
 
 
-void client_fetch(URL url, struct HttpClient *hc, struct CurlResponse *resp)
+void fetchClient(URL url, struct HttpClient *hc, struct CurlResponse *resp)
 {
     CURL *curl = hc->curl;
     CURLcode res;
@@ -161,30 +163,23 @@ void client_fetch(URL url, struct HttpClient *hc, struct CurlResponse *resp)
         inputHttpParser(&(resp->data.parser), NULL, 0);
     }
 
-    int bs = strlen(url) + 128;
-    msg = malloc(bs);
+    msg = getCoreTempBuffer();
 
     if (res == CURLE_OK) {
         int status = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
 
         resp->status = status;
-        snprintf(msg,
-                 bs,
-                 "Get URL %s successfully Status Code %d, ContentLength: %ld",
-                 url,
-                 status,
-                 resp->contentLength);
+        snprintf(msg, CORE_BUFFER_SIZE, SUCCESS_FMT, url, status, resp->contentLength);
         DEBUG(msg);
     } else {
-        snprintf(msg, bs, FAILED_FMT, url, curl_easy_strerror(res));
+        snprintf(msg, CORE_BUFFER_SIZE, FAILED_FMT, url, curl_easy_strerror(res));
         ERROR(msg);
     }
-    // freeCoreTempBuffer(msg);
-    free(msg);
+    freeCoreTempBuffer(msg);
 }
 
-void client_free(struct HttpClient *hc)
+void freeClient(struct HttpClient *hc)
 {
     CURL *curl = (CURL *)(hc->curl);
     curl_easy_cleanup(curl);
@@ -193,7 +188,7 @@ void client_free(struct HttpClient *hc)
 void fetch(URL url, struct CurlResponse *resp)
 {
     struct HttpClient hc;
-    client_init(&hc);
-    client_fetch(url, &hc, resp);
-    client_free(&hc);
+    initHttpClient(&hc);
+    fetchClient(url, &hc, resp);
+    freeClient(&hc);
 }

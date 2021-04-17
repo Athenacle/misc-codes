@@ -12,18 +12,18 @@
 
 static int check(URL url)
 {
-    return regex_match(url, WEBSITE_REGEX);
+    return matchRegex(url, WEBSITE_REGEX);
 }
 
 
 static int hn_detail_div_con_box(xmlNodePtr ptr)
 {
-    return CHECK_TAG_NAME(ptr, "div") && check_tag_attr(ptr, "class", "con_box");
+    return CHECK_TAG_NAME(ptr, "div") && htmlCheckNodeAttr(ptr, "class", "con_box");
 }
 
 static int hn_check_parent_div_top(xmlNodePtr ptr)
 {
-    return CHECK_TAG_NAME(ptr->parent, "div") && check_tag_attr(ptr->parent, "class", "top");
+    return CHECK_TAG_NAME(ptr->parent, "div") && htmlCheckNodeAttr(ptr->parent, "class", "top");
 }
 
 static int hn_title_h3(xmlNodePtr ptr)
@@ -38,19 +38,19 @@ static int hn_author_p(xmlNodePtr ptr)
 
 static void hn_title(xmlNodePtr head, struct Novel* n)
 {
-    xmlNodePtr title = traverse_find_first(head, hn_title_h3);
+    xmlNodePtr title = htmlFindFirst(head, hn_title_h3);
     if (title) {
         TRACE("body > div.content > div > div.top > h3 found");
-        n->title = get_node_text(title);
+        n->title = getNodeText(title);
     }
 }
 
 static void hn_author(xmlNodePtr head, struct Novel* n)
 {
-    xmlNodePtr author = traverse_find_first(head, hn_author_p);
+    xmlNodePtr author = htmlFindFirst(head, hn_author_p);
     if (author) {
         TRACE("body > div.content > div > div.top > p found");
-        char* a = get_node_text(author);
+        char* a = getNodeText(author);
         if (strstr(a, "作者：") == a) {
             char* start = a + strlen("作者：");
             n->author = strdup(start);
@@ -63,7 +63,7 @@ static void hn_author(xmlNodePtr head, struct Novel* n)
 
 static int hn_class_fL_con(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "fL_con");
+    return CHECK_TAG_NAME(node, "div") && htmlCheckNodeAttr(node, "class", "fL_con");
 }
 
 
@@ -73,15 +73,15 @@ static void hn_transform_allA(struct LinkList* node)
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
         struct Chapter* ch = createChapter();
-        ch->url = get_node_attr(ptr, "href");
-        ch->title = get_node_text(ptr);
+        ch->url = getNodeAttr(ptr, "href");
+        ch->title = getNodeText(ptr);
         node->data = ch;
     }
 }
 
 static int hn_find_txt(xmlNodePtr ptr)
 {
-    return CHECK_TAG_NAME(ptr, "div") && check_tag_attr(ptr, "id", "txt");
+    return CHECK_TAG_NAME(ptr, "div") && htmlCheckNodeAttr(ptr, "id", "txt");
 }
 
 static const char* find(unsigned int in)
@@ -175,7 +175,7 @@ static void do_save(xmlNodePtr node, struct Buffer* buf)
 
 static void hn_content_do_page(xmlNodePtr root, struct Buffer* buf)
 {
-    xmlNodePtr next = traverse_find_first(root, hn_find_txt);
+    xmlNodePtr next = htmlFindFirst(root, hn_find_txt);
     if (next) {
         struct LinkList allP;
         xmlNodePtr children = next->children;
@@ -191,7 +191,7 @@ static void hn_content_do_page(xmlNodePtr root, struct Buffer* buf)
 
 static int hn_find_next(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "a") && check_tag_attr(node, "class", "url_next");
+    return CHECK_TAG_NAME(node, "a") && htmlCheckNodeAttr(node, "class", "url_next");
 }
 
 static void hm_check_next_page(xmlNodePtr doc,
@@ -199,15 +199,15 @@ static void hm_check_next_page(xmlNodePtr doc,
                                struct Buffer* buf,
                                struct Chapter* c)
 {
-    xmlNodePtr next = traverse_find_first(doc, hn_find_next);
+    xmlNodePtr next = htmlFindFirst(doc, hn_find_next);
     if (next) {
-        char* href = get_node_attr(next, "href");
+        char* href = getNodeAttr(next, "href");
         if (strstr(href, "?page=") == href) {
             char* nextUrl = malloc(strlen(c->url) + strlen(href) + 1);
             struct CurlResponse res;
             strcpy(nextUrl, c->url);
             strcat(nextUrl, href);
-            client_fetch(nextUrl, hc, &res);
+            fetchClient(nextUrl, hc, &res);
 
             if (res.status == 200 && res.type == TEXT_HTML) {
                 if (res.data.parser.doc) {
@@ -228,7 +228,7 @@ static char* hn_content_first_page(struct CurlResponse* resp,
                                    struct Chapter* c)
 {
     char* ret = NULL;
-    xmlNodePtr root = traverse_find_first(xmlDocGetRootElement(resp->data.parser.doc), hn_find_txt);
+    xmlNodePtr root = htmlFindFirst(xmlDocGetRootElement(resp->data.parser.doc), hn_find_txt);
     if (root) {
         struct Buffer buf;
         size_t size;
@@ -246,15 +246,15 @@ static char* hn_content_first_page(struct CurlResponse* resp,
 
 static void hn_do_download(xmlNodePtr node, struct Novel* n)
 {
-    xmlNodePtr list = traverse_find_first(node, hn_class_fL_con);
+    xmlNodePtr list = htmlFindFirst(node, hn_class_fL_con);
     if (list) {
         struct LinkList allA;
         initLinkList(&allA);
         TRACE("body > div.content > div > div.fenlei > div.fL_con found");
 
-        traverse_find_all(list, check_a, &allA);
+        htmlFindAll(list, htmlCheck_A, &allA);
         traverseLinkList(&allA, hn_transform_allA);
-        website_do_parallel_work(&allA, hn_content_first_page);
+        websiteParallelWork(&allA, hn_content_first_page);
         n->chapters = allAtoChapters(&allA);
         freeLinkList(&allA, NULL);
     }
@@ -266,7 +266,7 @@ static void hn_detail(struct CurlResponse* resp, struct Novel* n)
         xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
         assert(root != NULL);
 
-        xmlNodePtr head = traverse_find_first(root, hn_detail_div_con_box);
+        xmlNodePtr head = htmlFindFirst(root, hn_detail_div_con_box);
         if (head) {
             TRACE("div.con_box found");
             hn_title(head, n);
@@ -279,7 +279,7 @@ static void hn_detail(struct CurlResponse* resp, struct Novel* n)
 
 static void doit(URL url, struct CurlResponse* resp, struct Novel* n)
 {
-    if (regex_match(url, WEBSITE_REGEX)) {
+    if (matchRegex(url, WEBSITE_REGEX)) {
         INFO(WEBSITE_NAME " novel detail.");
         hn_detail(resp, n);
     }

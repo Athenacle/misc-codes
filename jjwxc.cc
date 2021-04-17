@@ -9,11 +9,11 @@
 #include <cstring>
 #include <errno.h>
 
-#include <spdlog/spdlog.h>
 #include "utils.h"
 
 #define HTML "/tmp/jjwxc.html"
 
+using namespace novel;
 
 void* loadHTML(size_t& size)
 {
@@ -43,7 +43,7 @@ int main()
     size_t s;
     auto data = loadHTML(s);
 
-    spdlog::set_level(spdlog::level::trace);
+    set_log_level(NDL_TRACE);
     ND_set_log_function(logger_func);
 
     struct JJwxc jj;

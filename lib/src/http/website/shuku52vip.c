@@ -9,18 +9,18 @@
 
 static int check(URL url)
 {
-    return regex_match(url, WEBSITE_REGEX);
+    return matchRegex(url, WEBSITE_REGEX);
 }
 
 static int sk52v_title(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "h1") && check_tag_attr(node, "class", "article-title");
+    return CHECK_TAG_NAME(node, "h1") && htmlCheckNodeAttr(node, "class", "article-title");
 }
 
 static void sk52v_do_title(struct Novel* n, xmlNodePtr node)
 {
     if (node) {
-        char* all = get_node_text(node);
+        char* all = getNodeText(node);
         if (strlen(all) > 0) {
             char* last = strstr(all, "【");
             char* end = all + strlen(all);
@@ -48,23 +48,23 @@ static void sk52v_do_title(struct Novel* n, xmlNodePtr node)
 
 static int sk52v_find_desc(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "article") && check_tag_attr(node, "class", "article-content");
+    return CHECK_TAG_NAME(node, "article") && htmlCheckNodeAttr(node, "class", "article-content");
 }
 
 static void sk52v_desc(xmlNodePtr node, struct Novel* n)
 {
-    xmlNodePtr ptr = traverse_find_first(node, sk52v_find_desc);
+    xmlNodePtr ptr = htmlFindFirst(node, sk52v_find_desc);
 
     if (ptr && ptr->children && ptr->children->next && ptr->children->next->next) {
         struct LinkList list;
         initLinkList(&list);
 
-        traverse_find_all(ptr, check_p, &list);
+        htmlFindAll(ptr, htmlCheck_P, &list);
 
         if (list.next->data) {
             xmlNodePtr p = (xmlNodePtr)list.next->data;
-            if (check_p(p)) {
-                char* desc = get_node_text(p);
+            if (htmlCheck_P(p)) {
+                char* desc = getNodeText(p);
                 TRACE(desc);
                 n->desc = desc;
             }
@@ -75,7 +75,7 @@ static void sk52v_desc(xmlNodePtr node, struct Novel* n)
 
 static int sk52v_find_mulu(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "ul") && check_tag_attr(node, "class", "list");
+    return CHECK_TAG_NAME(node, "ul") && htmlCheckNodeAttr(node, "class", "list");
 }
 
 static void transform(struct LinkList* node)
@@ -84,8 +84,8 @@ static void transform(struct LinkList* node)
     xmlNodePtr ptr = (xmlNodePtr)(data);
     if (ptr) {
         struct Chapter* ch = createChapter();
-        ch->url = get_node_attr(ptr, "href");
-        ch->title = get_node_text(ptr);
+        ch->url = getNodeAttr(ptr, "href");
+        ch->title = getNodeText(ptr);
         node->data = ch;
     }
 }
@@ -96,7 +96,7 @@ static void sk52v_extract_content(struct LinkList* node, void* ud)
     if (data) {
         struct Buffer* buf = (struct Buffer*)ud;
         xmlNodePtr ptr = (xmlNodePtr)data;
-        char* c = get_node_text_raw(ptr);
+        char* c = getNodeTextRaw(ptr);
         if (c) {
             appendBufferString(buf, c);
             appendBuffer(buf, "\n", 1);
@@ -115,14 +115,14 @@ static char* sk52v_content_page(struct CurlResponse* resp, struct HttpClient* hc
     struct Buffer buf;
     char* ret = NULL;
 
-    xmlNodePtr content = traverse_find_first(root, sk52v_find_desc);
+    xmlNodePtr content = htmlFindFirst(root, sk52v_find_desc);
     if (content == NULL) {
         return NULL;
     }
 
     initLinkList(&list);
     initBuffer(&buf);
-    traverse_find_all(content, check_p, &list);
+    htmlFindAll(content, htmlCheck_P, &list);
     traverseLinkListWithData(&list, sk52v_extract_content, &buf);
     ret = collectBuffer(&buf, NULL);
     freeLinkList(&list, NULL);
@@ -132,18 +132,18 @@ static char* sk52v_content_page(struct CurlResponse* resp, struct HttpClient* hc
 
 static int sk52v_a_href(xmlNodePtr ptr)
 {
-    return check_a(ptr) && CHECK_TAG_NAME(ptr->parent, "li");
+    return htmlCheck_A(ptr) && CHECK_TAG_NAME(ptr->parent, "li");
 }
 
 static void sk52v_mulu(xmlNodePtr node, struct Novel* n)
 {
-    xmlNodePtr ml = traverse_find_first(node, sk52v_find_mulu);
+    xmlNodePtr ml = htmlFindFirst(node, sk52v_find_mulu);
     if (ml) {
         struct LinkList link;
         initLinkList(&link);
-        traverse_find_all(ml, sk52v_a_href, &link);
+        htmlFindAll(ml, sk52v_a_href, &link);
         traverseLinkList(&link, transform);
-        website_do_parallel_work(&link, sk52v_content_page);
+        websiteParallelWork(&link, sk52v_content_page);
         n->chapters = allAtoChapters(&link);
         freeLinkList(&link, NULL);
     }
@@ -153,7 +153,7 @@ static void sk52v_detail(struct CurlResponse* resp, struct Novel* n)
 {
     xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     if (root) {
-        sk52v_do_title(n, traverse_find_first(root, sk52v_title));
+        sk52v_do_title(n, htmlFindFirst(root, sk52v_title));
         sk52v_desc(root, n);
 
         sk52v_mulu(root, n);
@@ -162,7 +162,7 @@ static void sk52v_detail(struct CurlResponse* resp, struct Novel* n)
 
 static void doit(URL url, struct CurlResponse* resp, struct Novel* n)
 {
-    if (regex_match(url, WEBSITE_REGEX)) {
+    if (matchRegex(url, WEBSITE_REGEX)) {
         INFO("shuku52vip novel detail.");
         sk52v_detail(resp, n);
     }

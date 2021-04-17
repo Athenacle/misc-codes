@@ -9,7 +9,7 @@
 
 #include <pthread.h>
 
-#define PSIZE (1 << 14)
+#define DEFAULT_BUFFER_BLOCK_SIZE (1 << 14)
 
 struct Buffer* createBuffer(size_t size)
 {
@@ -17,7 +17,7 @@ struct Buffer* createBuffer(size_t size)
     PRINT_FUNC_MISC(size);
 
     struct Buffer* ret = (struct Buffer*)malloc(sizeof(struct Buffer));
-    if (size > PSIZE) {
+    if (size > DEFAULT_BUFFER_BLOCK_SIZE) {
         ret->bufferSize = size;
         ret->buffer = ret->end = malloc(size);
         ret->next = NULL;
@@ -32,7 +32,7 @@ void initBuffer(struct Buffer* buf)
 {
     PRINT_FUNC_COUNT;
 
-    buf->bufferSize = PSIZE;
+    buf->bufferSize = DEFAULT_BUFFER_BLOCK_SIZE;
     buf->end = buf->buffer = malloc(buf->bufferSize);
     buf->next = NULL;
 }
@@ -130,7 +130,7 @@ void clearBuffer(struct Buffer* buf)
 }
 
 
-void* regex_compile(const char* regex)
+void* compileRegex(const char* regex)
 {
     int errornumber;
     PCRE2_SIZE erroroffset;
@@ -138,11 +138,13 @@ void* regex_compile(const char* regex)
     return pcre2_compile(
         (PCRE2_SPTR)regex, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
 }
-void regex_free(void* regex)
+
+void freeRegex(void* regex)
 {
     pcre2_code_free(regex);
 }
-int regex_match_compiled(const char* string, void* regex)
+
+int matchRegexCompiled(const char* string, void* regex)
 {
     if (regex == NULL) {
         return 0;
@@ -154,11 +156,11 @@ int regex_match_compiled(const char* string, void* regex)
     return rc > 0;
 }
 
-int regex_match(const char* string, const char* regex)
+int matchRegex(const char* string, const char* regex)
 {
-    pcre2_code* re = regex_compile(regex);
-    int rc = regex_match_compiled(string, re);
-    regex_free(re);
+    pcre2_code* re = compileRegex(regex);
+    int rc = matchRegexCompiled(string, re);
+    freeRegex(re);
     return rc;
 }
 
@@ -399,7 +401,7 @@ struct ThreadLocal {
     struct ParallelWork* work;
 };
 
-static void* thread_function(void* arg)
+static void* threadWorker(void* arg)
 {
     struct ThreadLocal* thr = (struct ThreadLocal*)(arg);
     struct ParallelWork* works = thr->work;
@@ -429,7 +431,7 @@ static void traverseCB(struct LinkList* node)
     data->retry = 0;
 }
 
-void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFree)(void*))
+void doParallelWork(struct LinkList* work, void* (*tsCreate)(int), void (*tsFree)(void*))
 {
     struct ThreadLocal* threads =
         (struct ThreadLocal*)malloc(threadCount * sizeof(struct ThreadLocal));
@@ -446,7 +448,7 @@ void do_parallel_work(struct LinkList* work, void* (*tsCreate)(int), void (*tsFr
     for (int i = 0; i < threadCount; i++) {
         threads[i].work = &workObject;
         threads[i].index = i;
-        pthread_create(&threads[i].tid, NULL, thread_function, threads + i);
+        pthread_create(&threads[i].tid, NULL, threadWorker, threads + i);
     }
 
     for (int i = 0; i < threadCount; i++) {

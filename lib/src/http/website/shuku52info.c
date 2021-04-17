@@ -10,32 +10,32 @@
 
 static int check(URL url)
 {
-    return regex_match(url, WEBSITE_REGEX);
+    return matchRegex(url, WEBSITE_REGEX);
 }
 
 static int sk52i_title(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "h1") && check_tag_attr(node, "class", "booktitle");
+    return CHECK_TAG_NAME(node, "h1") && htmlCheckNodeAttr(node, "class", "booktitle");
 }
 
 static int sk52i_author(xmlNodePtr node)
 {
-    return check_a(node) && CHECK_TAG_NAME(node->parent, "p")
-           && check_tag_attr(node, "class", "red")
-           && check_tag_attr(node->parent, "class", "booktag");
+    return htmlCheck_A(node) && CHECK_TAG_NAME(node->parent, "p")
+           && htmlCheckNodeAttr(node, "class", "red")
+           && htmlCheckNodeAttr(node->parent, "class", "booktag");
 }
 
 static int sk52i_intro(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "p") && check_tag_attr(node, "class", "bookintro")
-           && check_tag_attr(node->parent, "class", "bookinfo");
+    return CHECK_TAG_NAME(node, "p") && htmlCheckNodeAttr(node, "class", "bookintro")
+           && htmlCheckNodeAttr(node->parent, "class", "bookinfo");
 }
 
 static void sk52i_do_title(xmlNodePtr node, struct Novel* n)
 {
-    n->title = get_node_text(traverse_find_first(node, sk52i_title));
-    n->author = get_node_text(traverse_find_first(node, sk52i_author));
-    n->desc = get_node_text(traverse_find_first(node, sk52i_intro));
+    n->title = getNodeText(htmlFindFirst(node, sk52i_title));
+    n->author = getNodeText(htmlFindFirst(node, sk52i_author));
+    n->desc = getNodeText(htmlFindFirst(node, sk52i_intro));
 }
 
 static void sk52i_extract_content(struct LinkList* node, void* ud)
@@ -53,18 +53,18 @@ static void sk52i_extract_content(struct LinkList* node, void* ud)
 static int sk52i_content_text(xmlNodePtr node)
 {
     return node->type == XML_TEXT_NODE && CHECK_TAG_NAME(node->parent, "div")
-           && check_tag_attr(node->parent, "class", "readcontent");
+           && htmlCheckNodeAttr(node->parent, "class", "readcontent");
 }
 
 static int sk52i_find_next(xmlNodePtr node)
 {
-    return check_p(node) && check_tag_attr(node, "class", "text-danger")
-           && check_tag_attr(node, "class", "text-center");
+    return htmlCheck_P(node) && htmlCheckNodeAttr(node, "class", "text-danger")
+           && htmlCheckNodeAttr(node, "class", "text-center");
 }
 
 static int sk52i_next_a_href(xmlNodePtr node)
 {
-    return check_a(node) && check_tag_attr(node, "id", "linkNext");
+    return htmlCheck_A(node) && htmlCheckNodeAttr(node, "id", "linkNext");
 }
 
 #define WEBSITE_BASE_URL "https://www.52shuku.info/"
@@ -74,23 +74,23 @@ static void sk52i_check_next(xmlNodePtr node,
                              struct HttpClient* hc,
                              struct Buffer* buf)
 {
-    xmlNodePtr next = traverse_find_first(node, sk52i_find_next);
-    xmlNodePtr na = traverse_find_first(node, sk52i_next_a_href);
+    xmlNodePtr next = htmlFindFirst(node, sk52i_find_next);
+    xmlNodePtr na = htmlFindFirst(node, sk52i_next_a_href);
     if (next && na) {
         struct LinkList list;
         struct CurlResponse resp;
-        char* href = get_node_attr(na, "href");
+        char* href = getNodeAttr(na, "href");
         char* url = (char*)malloc(sizeof(WEBSITE_BASE_URL) + strlen(href) + 1);
         strcpy(url, WEBSITE_BASE_URL);
         strcat(url, href);
 
         initLinkList(&list);
 
-        client_fetch(url, hc, &resp);
+        fetchClient(url, hc, &resp);
         if (resp.status == 200 && resp.type == TEXT_HTML) {
             if (resp.data.parser.doc) {
                 xmlNodePtr root = xmlDocGetRootElement(resp.data.parser.doc);
-                traverse_find_all(root, sk52i_content_text, &list);
+                htmlFindAll(root, sk52i_content_text, &list);
                 traverseLinkListWithData(&list, sk52i_extract_content, buf);
                 sk52i_check_next(root, c, hc, buf);
             }
@@ -113,7 +113,7 @@ static char* sk52i_content_page(struct CurlResponse* resp, struct HttpClient* hc
     struct Buffer buf;
     char* ret = NULL;
 
-    xmlNodePtr content = traverse_find_first(root, sk52i_content_text);
+    xmlNodePtr content = htmlFindFirst(root, sk52i_content_text);
     if (content == NULL) {
         return NULL;
     }
@@ -121,7 +121,7 @@ static char* sk52i_content_page(struct CurlResponse* resp, struct HttpClient* hc
     initLinkList(&list);
     initBuffer(&buf);
 
-    traverse_find_all(content, sk52i_content_text, &list);
+    htmlFindAll(content, sk52i_content_text, &list);
     traverseLinkListWithData(&list, sk52i_extract_content, &buf);
 
     sk52i_check_next(root, c, hc, &buf);
@@ -140,11 +140,11 @@ static void sk52i_transform(struct LinkList* node, void* n)
     struct Novel* np = (struct Novel*)n;
     if (ptr) {
         struct Chapter* ch = createChapter();
-        char* h = get_node_attr(ptr, "href");
+        char* h = getNodeAttr(ptr, "href");
         char* u = (char*)malloc(strlen(np->start_url) + strlen(h) + 1);
         strcpy(u, np->start_url);
         strcat(u, h);
-        ch->title = get_node_text(ptr);
+        ch->title = getNodeText(ptr);
         ch->url = u;
         node->data = ch;
         free(h);
@@ -154,16 +154,16 @@ static void sk52i_transform(struct LinkList* node, void* n)
 
 static int sk52i_a(xmlNodePtr node)
 {
-    return check_a(node) && CHECK_TAG_NAME(node->parent, "dd");
+    return htmlCheck_A(node) && CHECK_TAG_NAME(node->parent, "dd");
 }
 
 static void sk52i_context(xmlNodePtr root, struct Novel* n)
 {
     struct LinkList list;
     initLinkList(&list);
-    traverse_find_all(root, sk52i_a, &list);
+    htmlFindAll(root, sk52i_a, &list);
     traverseLinkListWithData(&list, sk52i_transform, n);
-    website_do_parallel_work(&list, sk52i_content_page);
+    websiteParallelWork(&list, sk52i_content_page);
     n->chapters = allAtoChapters(&list);
     freeLinkList(&list, NULL);
 }
@@ -179,7 +179,7 @@ static void sk52i_detail(struct CurlResponse* resp, struct Novel* n)
 
 static void doit(URL url, struct CurlResponse* resp, struct Novel* n)
 {
-    if (regex_match(url, WEBSITE_REGEX)) {
+    if (matchRegex(url, WEBSITE_REGEX)) {
         INFO(WEBSITE_NAME " novel detail.");
         sk52i_detail(resp, n);
     }

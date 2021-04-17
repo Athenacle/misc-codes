@@ -61,7 +61,6 @@ static int search_link_list_func(void* data, const void* in)
 {
     return data != NULL && strcmp(((struct FuncCount*)data)->name, (char*)in) == 0;
 }
-
 static struct LinkList* findLastDBG(struct LinkList* list)
 {
     while (list->next) {
@@ -243,7 +242,7 @@ void ND_init()
         DEBUG(coreBuffer);
 
         srand(time(NULL));
-        init_websites();
+        initWebsites();
         curl_global_init(CURL_GLOBAL_ALL);
 
         cc = opencc_open(OPENCC_DEFAULT_CONFIG_TRAD_TO_SIMP);
@@ -274,7 +273,7 @@ void ND_shutdown()
 static void download(const char* url, struct Novel* n)
 {
     struct CurlResponse resp;
-    struct WebsiteHandler* handler = dispatch_url(url);
+    struct WebsiteHandler* handler = dispatchURL(url);
 
     if (handler) {
         initCurlResponse(&resp);

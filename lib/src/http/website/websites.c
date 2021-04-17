@@ -5,48 +5,48 @@
 
 struct WebsiteHandler* handlers[] = {&wxc256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
 
-void init_websites() {}
+void initWebsites() {}
 
-int check_p(xmlNodePtr node)
+int htmlCheck_P(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "p");
 }
 
-int check_a(xmlNodePtr node)
+int htmlCheck_A(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "a");
 }
 
-int check_h2(xmlNodePtr node)
+int htmlCheck_H2(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "h2");
 }
 
-int check_span(xmlNodePtr node)
+int htmlCheck_SPAN(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "span");
 }
 
-int check_td(xmlNodePtr node)
+int htmlCheck_TD(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "td");
 }
 
-int check_li(xmlNodePtr node)
+int htmlCheck_li(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "li");
 }
 
-int check_table(xmlNodePtr node)
+int htmlCheck_TABLE(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "table");
 }
 
-int check_font(xmlNodePtr node)
+int htmlCheck_FONT(xmlNodePtr node)
 {
     return CHECK_TAG_NAME(node, "font");
 }
-struct WebsiteHandler* dispatch_url(URL url)
+struct WebsiteHandler* dispatchURL(URL url)
 {
     for (size_t i = 0; i < sizeof(handlers) / sizeof(*handlers); i++) {
         struct WebsiteHandler* now = handlers[i];
@@ -61,7 +61,7 @@ struct WebsiteHandler* dispatch_url(URL url)
 }
 
 
-xmlNodePtr findByID(xmlNodePtr node, const char* id)
+xmlNodePtr htmlFindByID(xmlNodePtr node, const char* id)
 {
     PRINT_FUNC_COUNT;
 
@@ -73,16 +73,16 @@ xmlNodePtr findByID(xmlNodePtr node, const char* id)
     }
 
     for (cur_node = node; cur_node; cur_node = cur_node->next) {
-        if (check_tag_attr(cur_node, "id", id)) {
+        if (htmlCheckNodeAttr(cur_node, "id", id)) {
             found = cur_node;
         } else {
 #ifdef NDEBUG
-            found = findByID(cur_node->children, id);
+            found = htmlFindByID(cur_node->children, id);
             if (found) {
                 return found;
             }
 #else
-            xmlNodePtr nf = findByID(cur_node->children, id);
+            xmlNodePtr nf = htmlFindByID(cur_node->children, id);
             if (nf) {
                 if (found) {
                     char buf[256];
@@ -102,7 +102,7 @@ static int findBody(xmlNodePtr node)
     return CHECK_TAG_NAME(node, "body");
 }
 
-xmlNodePtr childFindNext(xmlNodePtr begin, traverse_find_test_func func)
+xmlNodePtr htmlChildFindNext(xmlNodePtr begin, htmlFindFunc func)
 {
     if (begin == NULL) {
         return NULL;
@@ -122,7 +122,7 @@ xmlNodePtr childFindNext(xmlNodePtr begin, traverse_find_test_func func)
 
     } while (1);
 }
-xmlNodePtr childFindPrev(xmlNodePtr begin, traverse_find_test_func func)
+xmlNodePtr htmlChildFindPrev(xmlNodePtr begin, htmlFindFunc func)
 {
     if (begin == NULL) {
         return NULL;
@@ -137,12 +137,12 @@ xmlNodePtr childFindPrev(xmlNodePtr begin, traverse_find_test_func func)
     return NULL;
 }
 
-xmlNodePtr traverse_find_body(xmlNodePtr begin)
+xmlNodePtr htmlFindBody(xmlNodePtr begin)
 {
-    return traverse_find_first(begin, findBody);
+    return htmlFindFirst(begin, findBody);
 }
 
-xmlNodePtr traverse_find_nth_child(xmlNodePtr begin, traverse_find_test_func func, int n)
+xmlNodePtr htmlFindNthChild(xmlNodePtr begin, htmlFindFunc func, int n)
 {
     PRINT_FUNC_COUNT;
 
@@ -161,7 +161,7 @@ xmlNodePtr traverse_find_nth_child(xmlNodePtr begin, traverse_find_test_func fun
     return NULL;
 }
 
-xmlNodePtr traverse_find_child(xmlNodePtr begin, traverse_find_test_func func)
+xmlNodePtr htmlFindChild(xmlNodePtr begin, htmlFindFunc func)
 {
     PRINT_FUNC_COUNT;
 
@@ -177,7 +177,7 @@ xmlNodePtr traverse_find_child(xmlNodePtr begin, traverse_find_test_func func)
     return NULL;
 }
 
-xmlNodePtr traverse_find_first(xmlNodePtr begin, traverse_find_test_func func)
+xmlNodePtr htmlFindFirst(xmlNodePtr begin, htmlFindFunc func)
 {
     PRINT_FUNC_COUNT;
 
@@ -192,7 +192,7 @@ xmlNodePtr traverse_find_first(xmlNodePtr begin, traverse_find_test_func func)
         if (func(cur_node)) {
             return cur_node;
         }
-        found = traverse_find_first(cur_node->children, func);
+        found = htmlFindFirst(cur_node->children, func);
         if (found) {
             return found;
         }
@@ -200,7 +200,7 @@ xmlNodePtr traverse_find_first(xmlNodePtr begin, traverse_find_test_func func)
     return NULL;
 }
 
-void traverse_find_all(xmlNodePtr begin, traverse_find_test_func func, struct LinkList* link)
+void htmlFindAll(xmlNodePtr begin, htmlFindFunc func, struct LinkList* link)
 {
     PRINT_FUNC_COUNT;
 
@@ -210,7 +210,7 @@ void traverse_find_all(xmlNodePtr begin, traverse_find_test_func func, struct Li
         if (func(cur_node)) {
             appendLinkList(link, cur_node);
         }
-        traverse_find_all(cur_node->children, func, link);
+        htmlFindAll(cur_node->children, func, link);
     }
 }
 
@@ -231,7 +231,7 @@ static xmlAttrPtr hasProp(const xmlNodePtr node, const char* name)
     return prop;
 }
 
-int check_tag_attr(xmlNodePtr ptr, const char* attr, const char* value)
+int htmlCheckNodeAttr(xmlNodePtr ptr, const char* attr, const char* value)
 {
     PRINT_FUNC_COUNT;
 
@@ -245,7 +245,7 @@ int check_tag_attr(xmlNodePtr ptr, const char* attr, const char* value)
     return ret;
 }
 
-char* get_node_text_raw(xmlNodePtr ptr)
+char* getNodeTextRaw(xmlNodePtr ptr)
 {
     PRINT_FUNC_COUNT;
 
@@ -311,7 +311,7 @@ static char* dump_strip_string(const unsigned char* in)
 }
 
 
-char* get_node_text(xmlNodePtr ptr)
+char* getNodeText(xmlNodePtr ptr)
 {
     PRINT_FUNC_COUNT;
     if (ptr) {
@@ -325,7 +325,7 @@ char* get_node_text(xmlNodePtr ptr)
     return strdup("");
 }
 
-char* get_node_attr_raw(xmlNodePtr ptr, const char* attr)
+char* getNodeAttrRaw(xmlNodePtr ptr, const char* attr)
 {
     PRINT_FUNC_COUNT;
 
@@ -338,11 +338,11 @@ char* get_node_attr_raw(xmlNodePtr ptr, const char* attr)
     return NULL;
 }
 
-char* get_node_attr(xmlNodePtr ptr, const char* attr)
+char* getNodeAttr(xmlNodePtr ptr, const char* attr)
 {
     PRINT_FUNC_COUNT;
 
-    char* r = get_node_attr_raw(ptr, attr);
+    char* r = getNodeAttrRaw(ptr, attr);
     if (r) {
         return strdup(r);
     } else {
@@ -357,7 +357,7 @@ void* websiteCreateThreadSharedFunc(int v)
 
     (void)v;
     struct HttpClient* hc = (struct HttpClient*)malloc(sizeof(struct HttpClient));
-    client_init(hc);
+    initHttpClient(hc);
     return hc;
 }
 
@@ -365,7 +365,7 @@ void websiteDestroyThreadSharedFunc(void* s)
 {
     PRINT_FUNC_COUNT;
 
-    client_free((struct HttpClient*)s);
+    freeClient((struct HttpClient*)s);
     free(s);
 }
 
@@ -386,7 +386,7 @@ static int thread_func(void* ww, void* curl)
     int ret = 0;
 
     if (chapter && chapter->url && strlen(chapter->url) > 0) {
-        client_fetch(chapter->url, hc, &resp);
+        fetchClient(chapter->url, hc, &resp);
         if (resp.status == 200 && resp.type == TEXT_HTML) {
             if (resp.data.parser.doc) {
                 result = www->parse(&resp, hc, chapter);
@@ -439,21 +439,15 @@ static void makeWorks(struct LinkList* work, struct LinkList* urls, websiteParse
     }
 }
 
-void website_do_parallel_work(struct LinkList* urls, websiteParsePage parse)
+void websiteParallelWork(struct LinkList* urls, websiteParsePage parse)
 {
     struct LinkList work;
     initLinkList(&work);
     makeWorks(&work, urls, parse);
-    do_parallel_work(&work, websiteCreateThreadSharedFunc, websiteDestroyThreadSharedFunc);
+    doParallelWork(&work, websiteCreateThreadSharedFunc, websiteDestroyThreadSharedFunc);
     freeLinkList(&work, releaseWork);
 }
 
-struct Chapters* initChapters(void)
-{
-    struct Chapters* ret = (struct Chapters*)malloc(sizeof(struct Chapters));
-    ret->begin = NULL;
-    return ret;
-}
 struct Chapter* createChapter(void)
 {
     struct Chapter* c = (struct Chapter*)malloc(sizeof(struct Chapter));
@@ -484,16 +478,16 @@ xmlNodePtr chainFind(xmlNodePtr begin, ...)
 
     va_list args;
     xmlNodePtr b = begin;
-    traverse_find_test_func fn = NULL;
+    htmlFindFunc fn = NULL;
 
     va_start(args, begin);
-    fn = va_arg(args, traverse_find_test_func);
+    fn = va_arg(args, htmlFindFunc);
     while (fn && b) {
-        b = traverse_find_first(b, fn);
+        b = htmlFindFirst(b, fn);
         if (b == NULL) {
             break;
         }
-        fn = va_arg(args, traverse_find_test_func);
+        fn = va_arg(args, htmlFindFunc);
     }
 
     va_end(args);

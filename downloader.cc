@@ -26,12 +26,12 @@ int main(int argc, const char* argv[])
     if (argc != 2) {
         usage(argv);
     }
-    spdlog::set_level(spdlog::level::trace);
-    ND_set_log_function(logger_func);
+    novel::set_log_level(NDL_TRACE);
+    ND_set_log_function(novel::logger_func);
 
     ND_init();
     ND_doit(argv[1], &n);
-    saveNovel(&n);
+    novel::saveNovel(&n);
     ND_novel_free(&n);
     ND_shutdown();
 }

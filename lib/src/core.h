@@ -150,11 +150,11 @@ void initCurlResponse(struct CurlResponse* resp);
 
 void clearCurlResponse(struct CurlResponse* resp);
 
-int regex_match(const char* string, const char* regex);
+int matchRegex(const char* string, const char* regex);
 
-void* regex_compile(const char* regex);
-void regex_free(void* regex);
-int regex_match_compiled(const char* string, void* regex);
+void* compileRegex(const char* regex);
+void freeRegex(void* regex);
+int matchRegexCompiled(const char* string, void* regex);
 
 // thread work
 
@@ -164,7 +164,7 @@ struct Work {
     int retry;
 };
 
-void do_parallel_work(struct LinkList*, void* (*)(int), void (*)(void*));
+void doParallelWork(struct LinkList*, void* (*)(int), void (*)(void*));
 
 extern int threadCount;
 
@@ -176,15 +176,11 @@ struct HttpClient {
 
 void fetch(URL url, struct CurlResponse* resp);
 
-void client_init(struct HttpClient* c);
+void initHttpClient(struct HttpClient* c);
 
-void client_fetch(URL url, struct HttpClient* c, struct CurlResponse* resp);
+void fetchClient(URL url, struct HttpClient* c, struct CurlResponse* resp);
 
-void client_free(struct HttpClient* c);
-
-// libxml2
-void buildLibXml2(struct CurlResponse* resp);
-
+void freeClient(struct HttpClient* c);
 
 // websites
 typedef int (*checkWebsite)(URL);
@@ -196,9 +192,9 @@ struct WebsiteHandler {
     const char* name;
 };
 
-void init_websites();
+void initWebsites();
 
-struct WebsiteHandler* dispatch_url(URL url);
+struct WebsiteHandler* dispatchURL(URL url);
 
 void jjwxc_doit_buffer(void* buffer, unsigned long size, struct JJwxc* j);
 

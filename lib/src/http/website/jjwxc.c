@@ -11,52 +11,52 @@
 
 static int check(URL url)
 {
-    return regex_match(url, WEBSITE_REGEX);
+    return matchRegex(url, WEBSITE_REGEX);
 }
 
 static int jf_rightul_printright(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "ul") && check_tag_attr(node, "name", "printright");
+    return CHECK_TAG_NAME(node, "ul") && htmlCheckNodeAttr(node, "name", "printright");
 }
 
 static int jf_r_genre(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "genre");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "itemprop", "genre");
 }
 
 static int jf_r_series(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "series");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "itemprop", "series");
 }
 
 static int jf_r_status(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "updataStatus");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "itemprop", "updataStatus");
 }
 
 static int jf_r_words(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "wordCount");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "itemprop", "wordCount");
 }
 
 static int jf_span_bigtext(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "class", "bigtext");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "class", "bigtext");
 }
 
 static int jf_span_articleSection(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "articleSection");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "itemprop", "articleSection");
 }
 
 static int jf_tb_oneboolt(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "table") && check_tag_attr(node, "id", "oneboolt");
+    return CHECK_TAG_NAME(node, "table") && htmlCheckNodeAttr(node, "id", "oneboolt");
 }
 
 static int jf_span_author(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "span") && check_tag_attr(node, "itemprop", "author");
+    return CHECK_TAG_NAME(node, "span") && htmlCheckNodeAttr(node, "itemprop", "author");
 }
 
 #define JPR(obj, field)                                               \
@@ -98,7 +98,7 @@ static void jj_print(struct JJwxc* jjwxc)
 
 static int jf_tr_readtd(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "class", "readtd");
+    return CHECK_TAG_NAME(node, "td") && htmlCheckNodeAttr(node, "class", "readtd");
 }
 
 static int jj_novel_extract_word_count(xmlNodePtr node)
@@ -108,7 +108,7 @@ static int jj_novel_extract_word_count(xmlNodePtr node)
     }
 
     int ret = 0;
-    char* out = get_node_text_raw(node);
+    char* out = getNodeTextRaw(node);
     if (out != NULL) {
         char c;
         while ((c = *out) != 0) {
@@ -131,7 +131,7 @@ static int jj_novel_extract_word_count(xmlNodePtr node)
 
 static int fd_div_smallreadbody(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "smallreadbody");
+    return CHECK_TAG_NAME(node, "div") && htmlCheckNodeAttr(node, "class", "smallreadbody");
 }
 
 static void* regex;
@@ -139,7 +139,7 @@ static void* regex;
 static int jf_tag_a(xmlNodePtr node)
 {
     assert(regex);
-    return check_a(node) && regex_match_compiled(get_node_attr_raw(node, "href"), regex);
+    return htmlCheck_A(node) && matchRegexCompiled(getNodeAttrRaw(node, "href"), regex);
 }
 
 void jj_extract_tags(struct LinkList* list, void* ptr)
@@ -147,7 +147,7 @@ void jj_extract_tags(struct LinkList* list, void* ptr)
     char** data = (char**)ptr;
 
     xmlNodePtr node = (xmlNodePtr)list->data;
-    char* tag = get_node_text_raw(node);
+    char* tag = getNodeTextRaw(node);
     if (tag) {
         if (*data == NULL) {
             *data = strdup(tag);
@@ -164,15 +164,15 @@ void jj_extract_tags(struct LinkList* list, void* ptr)
 
 static int jf_meta_dataModified(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "meta") && check_tag_attr(node, "itemprop", "dateModified")
-           && get_node_attr_raw(node, "content") != NULL;
+    return CHECK_TAG_NAME(node, "meta") && htmlCheckNodeAttr(node, "itemprop", "dateModified")
+           && getNodeAttrRaw(node, "content") != NULL;
 }
 
 static void jj_updatetime(xmlNodePtr node, struct JJwxc* jj)
 {
-    xmlNodePtr body = traverse_find_body(node);
-    xmlNodePtr dmN = traverse_find_first(body, jf_meta_dataModified);
-    jj->time = get_node_attr(dmN, "content");
+    xmlNodePtr body = htmlFindBody(node);
+    xmlNodePtr dmN = htmlFindFirst(body, jf_meta_dataModified);
+    jj->time = getNodeAttr(dmN, "content");
 }
 
 static void jj_novel_full_detail_tag(xmlNodePtr left, struct JJwxc* jj)
@@ -180,30 +180,30 @@ static void jj_novel_full_detail_tag(xmlNodePtr left, struct JJwxc* jj)
     struct LinkList list;
     char* tags = NULL;
 
-    xmlNodePtr smallreadbody = traverse_find_first(left, fd_div_smallreadbody);
+    xmlNodePtr smallreadbody = htmlFindFirst(left, fd_div_smallreadbody);
     initLinkList(&list);
-    regex = regex_compile(WEBSITE_REGEX "bookbase\\.php\\?");
+    regex = compileRegex(WEBSITE_REGEX "bookbase\\.php\\?");
     assert(regex);
 
-    traverse_find_all(smallreadbody, jf_tag_a, &list);
+    htmlFindAll(smallreadbody, jf_tag_a, &list);
     traverseLinkListWithData(&list, jj_extract_tags, &tags);
 
     freeLinkList(&list, NULL);
-    regex_free(regex);
+    freeRegex(regex);
     jj->tag = tags;
 }
 
 static int jf_chapter(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "tr") && check_tag_attr(node, "itemprop", "chapter");
+    return CHECK_TAG_NAME(node, "tr") && htmlCheckNodeAttr(node, "itemprop", "chapter");
 }
 static int jf_chapter_span_headline(xmlNodePtr node)
 {
-    return check_span(node) && check_tag_attr(node, "itemprop", "headline");
+    return htmlCheck_SPAN(node) && htmlCheckNodeAttr(node, "itemprop", "headline");
 }
 static int jf_chapter_word_count(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "itemprop", "wordCount");
+    return CHECK_TAG_NAME(node, "td") && htmlCheckNodeAttr(node, "itemprop", "wordCount");
 }
 
 /*
@@ -215,7 +215,7 @@ static int jf_chapter_word_count(xmlNodePtr node)
 
 static int jf_chapter_time(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "td") && check_tag_attr(node, "title", "章");
+    return CHECK_TAG_NAME(node, "td") && htmlCheckNodeAttr(node, "title", "章");
 }
 
 void jj_chapter_transform(struct LinkList* list)
@@ -226,29 +226,29 @@ void jj_chapter_transform(struct LinkList* list)
     if (node != NULL) {
         STRUCT_MALLOC_ZERO(Chapter, ch);
 
-        xmlNodePtr idN = childFindNext(node->children, check_td);
-        xmlNodePtr headN = childFindNext(idN, check_td);
-        xmlNodePtr urlN = chainFind(headN, jf_chapter_span_headline, check_a, NULL);
+        xmlNodePtr idN = htmlChildFindNext(node->children, htmlCheck_TD);
+        xmlNodePtr headN = htmlChildFindNext(idN, htmlCheck_TD);
+        xmlNodePtr urlN = chainFind(headN, jf_chapter_span_headline, htmlCheck_A, NULL);
 
         int id = jj_novel_extract_word_count(idN);
         ch->id = id;
 
         if (urlN != NULL) {
-            xmlNodePtr descN = childFindNext(headN, check_td);
+            xmlNodePtr descN = htmlChildFindNext(headN, htmlCheck_TD);
             xmlNodePtr wordN = chainFind(node, jf_chapter_word_count, NULL);
             xmlNodePtr timeN =
-                traverse_find_first(traverse_find_child(node, jf_chapter_time), check_span);
-            char* url = get_node_attr_raw(urlN, "href");
+                htmlFindFirst(htmlFindChild(node, jf_chapter_time), htmlCheck_SPAN);
+            char* url = getNodeAttrRaw(urlN, "href");
             int viped = 0;
 
             if (url != NULL) {
-                ch->url = get_node_attr(urlN, "href");
-            } else if (NULL != traverse_find_first(urlN->parent, check_font)) {
+                ch->url = getNodeAttr(urlN, "href");
+            } else if (NULL != htmlFindFirst(urlN->parent, htmlCheck_FONT)) {
                 viped = 1;
             }
-            ch->desc = get_node_text(descN);
-            ch->time = get_node_text(timeN);
-            ch->title = get_node_text(urlN);
+            ch->desc = getNodeText(descN);
+            ch->time = getNodeText(timeN);
+            ch->title = getNodeText(urlN);
             ch->words = jj_novel_extract_word_count(wordN);
 
             snprintf(lb,
@@ -266,8 +266,8 @@ void jj_chapter_transform(struct LinkList* list)
                 ch->context = strdup(ch->desc);
             }
         } else {
-            xmlNodePtr lockN = traverse_find_first(headN, check_font);
-            char* reason = get_node_attr_raw(lockN, "title");
+            xmlNodePtr lockN = htmlFindFirst(headN, htmlCheck_FONT);
+            char* reason = getNodeAttrRaw(lockN, "title");
 
             ch->title = strdup("锁");
 
@@ -291,7 +291,7 @@ void jj_chapter_transform(struct LinkList* list)
 
 static int jj_div_noveltext(xmlNodePtr node)
 {
-    return CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "noveltext");
+    return CHECK_TAG_NAME(node, "div") && htmlCheckNodeAttr(node, "class", "noveltext");
 }
 
 static void jj_append_node_text(xmlNodePtr node, struct Buffer* buf)
@@ -304,7 +304,7 @@ static void jj_append_node_text(xmlNodePtr node, struct Buffer* buf)
             }
         } else if (CHECK_TAG_NAME(node, "br")) {
             appendBufferString(buf, "\n");
-        } else if (CHECK_TAG_NAME(node, "div") && check_tag_attr(node, "class", "readsmall")) {
+        } else if (CHECK_TAG_NAME(node, "div") && htmlCheckNodeAttr(node, "class", "readsmall")) {
             appendBufferString(buf, "\n\n**************************************\n");
             jj_append_node_text(node->children, buf);
         }
@@ -317,7 +317,7 @@ static char* jj_do_page(struct CurlResponse* resp,
                         MAYBE_UNUSED struct Chapter* c)
 {
     xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
-    xmlNodePtr body = traverse_find_body(root);
+    xmlNodePtr body = htmlFindBody(root);
     xmlNodePtr novelTextN = chainFind(body, jf_tb_oneboolt, jj_div_noveltext, NULL);
 
     if (novelTextN) {
@@ -341,11 +341,11 @@ static void jj_novel_chapter_list(xmlNodePtr node, struct Novel* n)
 {
     struct LinkList trs;
     initLinkList(&trs);
-    xmlNodePtr table = traverse_find_child(node, jf_tb_oneboolt);
-    traverse_find_all(table, jf_chapter, &trs);
+    xmlNodePtr table = htmlFindChild(node, jf_tb_oneboolt);
+    htmlFindAll(table, jf_chapter, &trs);
     traverseLinkList(&trs, jj_chapter_transform);
 
-    website_do_parallel_work(&trs, jj_do_page);
+    websiteParallelWork(&trs, jj_do_page);
 
     n->chapters = allAtoChapters(&trs);
     freeLinkList(&trs, NULL);
@@ -360,16 +360,16 @@ static void jj_novel_detail(struct CurlResponse* resp, struct Novel* n)
         return;
     }
     initLinkList(&tds);
-    xmlNodePtr body = traverse_find_body(root);
+    xmlNodePtr body = htmlFindBody(root);
     xmlNodePtr titleN = chainFind(body, jf_span_bigtext, jf_span_articleSection, NULL);
-    xmlNodePtr authorN = chainFind(body, jf_tb_oneboolt, check_h2, check_a, jf_span_author, NULL);
+    xmlNodePtr authorN = chainFind(body, jf_tb_oneboolt, htmlCheck_H2, htmlCheck_A, jf_span_author, NULL);
 
-    n->title = get_node_text(titleN);
-    n->author = get_node_text(authorN);
+    n->title = getNodeText(titleN);
+    n->author = getNodeText(authorN);
 
     if (n->desc == NULL) {
-        xmlNodePtr descN = traverse_find_nth_child(body, check_table, 1);
-        traverse_find_all(descN, jf_tr_readtd, &tds);
+        xmlNodePtr descN = htmlFindNthChild(body, htmlCheck_TABLE, 1);
+        htmlFindAll(descN, jf_tr_readtd, &tds);
         if (countLinkListLength(&tds) == 2) {
             xmlNodePtr first = tds.data;
             n->desc = dumpHTML(first);
@@ -387,8 +387,8 @@ static char* jj_get_series(xmlNodePtr node)
         ret = strdup("");
     } else {
         assert(jf_r_series(node));
-        if (get_node_text_raw(node)) {
-            ret = get_node_text(node);
+        if (getNodeTextRaw(node)) {
+            ret = getNodeText(node);
         } else {
             xmlNodePtr child = node->children;
             char* lb = getCoreTempBuffer();
@@ -427,32 +427,32 @@ static void jj_novel_full_detail_right(xmlNodePtr right, struct JJwxc* jj)
     if (right == NULL) {
         return;
     }
-    xmlNodePtr rul = traverse_find_first(right, jf_rightul_printright);
-    xmlNodePtr genreN = traverse_find_first(rul, jf_r_genre);
-    xmlNodePtr lookN = chainFind(traverse_find_nth_child(rul, check_li, 2), check_span, NULL);
-    xmlNodePtr seriesN = traverse_find_first(rul, jf_r_series);
-    xmlNodePtr updataStatusN = traverse_find_first(rul, jf_r_status);
+    xmlNodePtr rul = htmlFindFirst(right, jf_rightul_printright);
+    xmlNodePtr genreN = htmlFindFirst(rul, jf_r_genre);
+    xmlNodePtr lookN = chainFind(htmlFindNthChild(rul, htmlCheck_li, 2), htmlCheck_SPAN, NULL);
+    xmlNodePtr seriesN = htmlFindFirst(rul, jf_r_series);
+    xmlNodePtr updataStatusN = htmlFindFirst(rul, jf_r_status);
 
     xmlNodePtr finishFontN = NULL;
     if (updataStatusN != NULL) {
-        finishFontN = traverse_find_first(updataStatusN->children, check_font);
+        finishFontN = htmlFindFirst(updataStatusN->children, htmlCheck_FONT);
     }
 
-    xmlNodePtr wcN = traverse_find_first(rul, jf_r_words);
+    xmlNodePtr wcN = htmlFindFirst(rul, jf_r_words);
 
-    jj->genre = get_node_text(genreN);
+    jj->genre = getNodeText(genreN);
     jj->series = jj_get_series(seriesN);
     jj->words = jj_novel_extract_word_count(wcN);
 
     if (lookN->next && lookN->next->type == XML_TEXT_NODE) {
-        jj->look = get_node_text(lookN->next);
+        jj->look = getNodeText(lookN->next);
     }
     if (finishFontN) {
-        jj->updateStatus = get_node_text(finishFontN);
+        jj->updateStatus = getNodeText(finishFontN);
     } else {
-        char* raw = get_node_text_raw(updataStatusN);
+        char* raw = getNodeTextRaw(updataStatusN);
         if (raw != NULL && strlen(raw) > 0) {
-            jj->updateStatus = get_node_text(updataStatusN);
+            jj->updateStatus = getNodeText(updataStatusN);
         }
     }
 }
@@ -460,8 +460,8 @@ static void jj_novel_full_detail_right(xmlNodePtr right, struct JJwxc* jj)
 
 static void jj_id(xmlNodePtr root, struct JJwxc* jj)
 {
-    xmlNodePtr aidN = findByID(root, "authorid_");
-    xmlNodePtr ridN = findByID(root, "clickNovelid");
+    xmlNodePtr aidN = htmlFindByID(root, "authorid_");
+    xmlNodePtr ridN = htmlFindByID(root, "clickNovelid");
     jj->aid = jj_novel_extract_word_count(aidN);
     jj->rid = jj_novel_extract_word_count(ridN);
 }
@@ -470,15 +470,15 @@ static void jj_novel_full_detail(xmlDocPtr doc, struct JJwxc* n)
 {
     struct LinkList tds;
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    xmlNodePtr body = traverse_find_body(root);
-    xmlNodePtr descN = traverse_find_nth_child(body, check_table, 1);
+    xmlNodePtr body = htmlFindBody(root);
+    xmlNodePtr descN = htmlFindNthChild(body, htmlCheck_TABLE, 1);
 
     jj_id(root, n);
     jj_updatetime(root, n);
 
     initLinkList(&tds);
 
-    traverse_find_all(descN, jf_tr_readtd, &tds);
+    htmlFindAll(descN, jf_tr_readtd, &tds);
     if (countLinkListLength(&tds) == 2) {
         xmlNodePtr left = tds.data;
         xmlNodePtr right = tds.next->data;
@@ -509,7 +509,7 @@ void jjwxc_doit_buffer(void* buffer, unsigned long size, struct JJwxc* j)
 
 static void jj_doit(URL url, struct CurlResponse* resp, struct Novel* n)
 {
-    if (regex_match(url, WEBSITE_REGEX)) {
+    if (matchRegex(url, WEBSITE_REGEX)) {
         INFO(WEBSITE_NAME " novel detail.");
         jj_novel_detail(resp, n);
     }
