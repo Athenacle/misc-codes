@@ -5,6 +5,7 @@
 
 // sites
 extern struct WebsiteHandler wxc256;
+extern struct WebsiteHandler wenku256;
 extern struct WebsiteHandler shuku52vip;
 extern struct WebsiteHandler shuku52info;
 extern struct WebsiteHandler hnxyrz;

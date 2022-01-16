@@ -6,9 +6,16 @@
 #include <string.h>
 
 #define WEBSITE_REGEX "^https?://www\\.256wxc\\.com/"
+#define WEBSITE_256WENKU_REGEX "^https?://www\\.256wenku\\.com/"
 
 // https://www.256wxc.com/read/60876/
 #define WEBSITE_NOVEL_DETAIL_REGEX WEBSITE_REGEX "read/\\d+/?$"
+#define WEBSITE_NOBEL_DETAIL_256WENKU_WEBSITE_REGEX WEBSITE_256WENKU_REGEX "read/\\d+/?$"
+
+static int check_256wenku(URL url)
+{
+    return matchRegex(url, WEBSITE_256WENKU_REGEX);
+}
 
 static int check(URL url)
 {
@@ -180,4 +187,15 @@ static void doit(URL url, struct CurlResponse* resp, struct Novel* n)
     }
 }
 
+
+static void doit_256wenku(URL url, struct CurlResponse* resp, struct Novel* n)
+{
+    if (matchRegex(url, WEBSITE_NOBEL_DETAIL_256WENKU_WEBSITE_REGEX)) {
+        INFO("Wenku256 novel detail.");
+        novel_detail(resp, n);
+    }
+}
+
+
 struct WebsiteHandler wxc256 = {.check = check, .doIt = doit, .name = "wxc256"};
+struct WebsiteHandler wenku256 = {.check = check_256wenku, .doIt = doit_256wenku, .name = "wenku256"};

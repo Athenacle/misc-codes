@@ -3,7 +3,7 @@
 #include <string.h>
 #include <libxml/HTMLtree.h>
 
-struct WebsiteHandler* handlers[] = {&wxc256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
+struct WebsiteHandler* handlers[] = {&wxc256, &wenku256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
 
 void initWebsites() {}
 
