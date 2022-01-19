@@ -161,7 +161,7 @@ static void novel_detail_get_all_urls(xmlNodePtr root, struct Novel* n)
 
 static void novel_detail(struct CurlResponse* resp, struct Novel* n)
 {
-    char buffer[1024];
+    char* buffer;
 
     xmlNodePtr root = xmlDocGetRootElement(resp->data.parser.doc);
     assert(root != NULL);
@@ -174,9 +174,13 @@ static void novel_detail(struct CurlResponse* resp, struct Novel* n)
     }
 
     novel_detail_get_all_urls(root, n);
-    snprintf(buffer, 1024, "Title %s, Author: %s, Desc: %s", n->title, n->author, n->desc);
+    buffer = getCoreTempBuffer();
+    snprintf(
+        buffer, CORE_BUFFER_SIZE, "Title %s, Author: %s, Desc: %s", n->title, n->author, n->desc);
 
     INFO(buffer);
+
+    freeCoreTempBuffer(buffer);
 }
 
 static void doit(URL url, struct CurlResponse* resp, struct Novel* n)
@@ -198,4 +202,5 @@ static void doit_256wenku(URL url, struct CurlResponse* resp, struct Novel* n)
 
 
 struct WebsiteHandler wxc256 = {.check = check, .doIt = doit, .name = "wxc256"};
-struct WebsiteHandler wenku256 = {.check = check_256wenku, .doIt = doit_256wenku, .name = "wenku256"};
+struct WebsiteHandler wenku256 = {
+    .check = check_256wenku, .doIt = doit_256wenku, .name = "wenku256"};

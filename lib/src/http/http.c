@@ -52,38 +52,24 @@ static size_t curlWriteDataCB(void *data, size_t size, size_t nmemb, void *userp
 }
 
 
-#define CONTENT_TYPE "content-type:"
+#define CONTENT_TYPE "content-type"
 
 #define CT_TEXT_HTML "text/html"
 #define CT_IMAGE_JPEG "image/jpeg"
 #define CT_APP_JSON "application/json"
 #define CT_TEXT_PLAIN "text/plain"
 
-
-static size_t headerStrlen(char *str)
-{
-    char c;
-    size_t ret = 0;
-    while ((c = *str)) {
-        if (c == '\r') {
-            return ret;
-        } else {
-            str++;
-        }
-    }
-    return 0;
-}
-#define MIN(a, b) (((((hs = ((a)))) <= ((b))) ? ((hs)) : ((b))))  // check function curlHeaderCB
-#define MATCH(in, text) (strncasecmp(in, text, MIN(headerStrlen(in), sizeof(text) - 1)) == 0)
+#define MATCH_CT(in, text)                           \
+    (((numbytes + (b - hv) - 2) == sizeof(text) - 1) \
+     && strncasecmp(in, text, sizeof(text) - 1) == 0)
 
 static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
 {
     size_t numbytes = size * nitems;
-    size_t hs = 0;
 
     struct CurlResponse *resp = (struct CurlResponse *)userdata;
 
-    if (MATCH(b, CONTENT_TYPE)) {
+    if (strncasecmp(b, CONTENT_TYPE, sizeof(CONTENT_TYPE) - 1) == 0) {
         char *hv = b + sizeof(CONTENT_TYPE);
         char c;
         while ((c = *hv) != '\r') {
@@ -94,13 +80,13 @@ static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
             }
         }
 
-        if (likely(MATCH(hv, CT_TEXT_HTML))) {
+        if (likely(MATCH_CT(hv, CT_TEXT_HTML))) {
             resp->type = TEXT_HTML;
-        } else if (likely(MATCH(hv, CT_IMAGE_JPEG))) {
+        } else if (likely(MATCH_CT(hv, CT_IMAGE_JPEG))) {
             resp->type = IMAGE_JPEG;
-        } else if (MATCH(hv, CT_APP_JSON)) {
+        } else if (MATCH_CT(hv, CT_APP_JSON)) {
             resp->type = APP_JSON;
-        } else if (MATCH(hv, CT_TEXT_PLAIN)) {
+        } else if (MATCH_CT(hv, CT_TEXT_PLAIN)) {
             resp->type = TEXT_PLAIN;
         } else {
             char *lb = getCoreTempBuffer();
@@ -121,8 +107,7 @@ static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
 
     return numbytes;
 }
-#undef MATCH
-#undef MIN
+#undef MATCH_CT
 
 static void initCurl(CURL *curl)
 {
@@ -166,11 +151,8 @@ void fetchClient(URL url, struct HttpClient *hc, struct CurlResponse *resp)
     msg = getCoreTempBuffer();
 
     if (res == CURLE_OK) {
-        int status = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
-
-        resp->status = status;
-        snprintf(msg, CORE_BUFFER_SIZE, SUCCESS_FMT, url, status, resp->contentLength);
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
+        snprintf(msg, CORE_BUFFER_SIZE, SUCCESS_FMT, url, resp->status, resp->contentLength);
         DEBUG(msg);
     } else {
         snprintf(msg, CORE_BUFFER_SIZE, FAILED_FMT, url, curl_easy_strerror(res));

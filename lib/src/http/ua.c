@@ -143,5 +143,5 @@ static char uas[][150] = {
 
 const char* ND_random_ua()
 {
-    return uas[rand() % (sizeof uas / sizeof(uas[0]) + 1)];
+    return uas[rand() % (sizeof uas / sizeof(uas[0]))];
 }
