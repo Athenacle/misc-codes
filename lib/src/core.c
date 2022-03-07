@@ -8,14 +8,16 @@
 
 #include "http/website/websites.h"
 
+#ifdef OPENCC
 #include <opencc/opencc.h>
+#endif
 
 #include <curl/curl.h>
 #include <pthread.h>
 
 static const char logLevel[][8] = {"[NONE]", "[ERROR]", "[WARN]", "[INFO]", "[DEBUG]", "[TRACE]"};
 
-
+#ifdef OPENCC
 static opencc_t cc = NULL;
 
 #define CONVERT(field)                                                 \
@@ -46,6 +48,8 @@ static void doOpenCC(struct Novel* n)
 }
 
 #undef CONVERT
+
+#endif
 
 #ifndef NDEBUG
 struct FuncCount {
@@ -245,8 +249,9 @@ void ND_init()
         initWebsites();
         curl_global_init(CURL_GLOBAL_ALL);
 
+#ifdef OPENCC
         cc = opencc_open(OPENCC_DEFAULT_CONFIG_TRAD_TO_SIMP);
-
+#endif
         atexit(doAtExit);
 
         LIBXML_TEST_VERSION
@@ -257,7 +262,10 @@ void ND_shutdown()
 {
     curl_global_cleanup();
     xmlCleanupParser();
+
+#ifdef OPENCC
     opencc_close(cc);
+#endif
 
 #ifndef NDEBUG
     clearFuncs();
@@ -294,7 +302,9 @@ void ND_doit(const char* url, struct Novel* n)
     memset(n, 0, sizeof(struct Novel));
     n->start_url = strdup(url);
     download(url, n);
+#ifdef OPENCC
     doOpenCC(n);
+#endif
 }
 
 
@@ -302,7 +312,10 @@ void ND_jjwxc_doit_buffer(void* buffer, unsigned long size, struct JJwxc* j)
 {
     SET_ZERO(j);
     jjwxc_doit_buffer(buffer, size, j);
+
+#ifdef OPENCC
     doOpenCC(&j->n);
+#endif
 }
 
 void ND_set_log_function(ND_logger_func func)
@@ -332,9 +345,15 @@ static void ND_clear_chapter(struct Chapter* n)
     struct Chapter* saved = NULL;
 
     while (n) {
+#ifdef OPENCC
         opencc_convert_utf8_free((char*)n->title);
         opencc_convert_utf8_free((char*)n->desc);
         opencc_convert_utf8_free((char*)n->context);
+#else
+        free((char*)n->title);
+        free((char*)n->desc);
+        free((char*)n->context);
+#endif
         free((char*)n->url);
         free((char*)n->time);
         saved = n;
@@ -345,11 +364,17 @@ static void ND_clear_chapter(struct Chapter* n)
 
 void ND_novel_free(struct Novel* n)
 {
+#ifdef OPENCC
     opencc_convert_utf8_free((char*)n->author);
-    free((char*)n->start_url);
     opencc_convert_utf8_free((char*)n->title);
     opencc_convert_utf8_free((char*)n->desc);
+#else
+    free((char*)n->author);
+    free((char*)n->title);
+    free((char*)n->desc);
+#endif
     ND_clear_chapter(n->chapters);
+    free((char*)n->start_url);
 }
 
 char* ND_collect_novel(struct Novel* n)
