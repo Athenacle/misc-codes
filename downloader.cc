@@ -25,7 +25,11 @@ int main(int argc, const char* argv[])
 
     ND_init(&c);
     ND_doit(f.url.c_str(), &n);
-    novel::saveNovel(&n);
+    if (f.upload.length() > 0) {
+        novel::uploadNovel(&n, f);
+    } else {
+        novel::saveNovel(&n);
+    }
     ND_novel_free(&n);
     ND_shutdown();
 }

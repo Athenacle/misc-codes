@@ -21,8 +21,12 @@ namespace novel
         std::string url;
 
         std::string proxy;
+
+        std::string upload;
     };
 
     bool parseArgument(Flags&, int argc, const char** argv);
+
+    void uploadNovel(struct Novel*, const Flags&);
 
 }  // namespace novel

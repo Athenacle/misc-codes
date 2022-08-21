@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <argparse/argparse.hpp>
+#include <curl/curl.h>
 
 using namespace spdlog::level;
 
@@ -56,6 +57,44 @@ namespace novel
         }
     }
 
+    void uploadNovel(struct Novel* n, const novel::Flags& flag)
+    {
+        chdir("/tmp");
+        saveNovel(n);
+        std::string f = fmt::format("{}.txt", n->title);
+
+        auto c = curl_easy_init();
+        curl_mime* form = curl_mime_init(c);
+
+
+        {
+            auto fi = curl_mime_addpart(form);
+            curl_mime_name(fi, "path");
+            curl_mime_data(fi, "/", 1);
+        }
+        {
+            auto field = curl_mime_addpart(form);
+            curl_mime_name(field, "newfile");
+            curl_mime_type(field, "text/plain");
+            curl_mime_filename(field, f.c_str());
+            curl_mime_filedata(field, f.c_str());
+        }
+
+        curl_easy_setopt(c, CURLOPT_URL, fmt::format("{}/upload", flag.upload).c_str());
+        curl_easy_setopt(c, CURLOPT_POST, 1);
+        curl_easy_setopt(c, CURLOPT_MIMEPOST, form);
+
+        auto r = curl_easy_perform(c);
+        if (r == CURLE_OK) {
+            spdlog::info("Upload to {} success", flag.upload);
+        } else {
+            spdlog::error("Upload to {} failed: {}", flag.upload, curl_easy_strerror(r));
+        }
+
+        unlink(f.c_str());
+    }
+
+
     bool parseArgument(Flags& f, int argc, const char** argv)
     {
 #ifdef VERSION
@@ -68,6 +107,9 @@ namespace novel
             .help("use proxy in curl format.")
             .default_value(std::string(""));
 
+
+        prog.add_argument("-u", "--upload").help("upload").default_value(std::string(""));
+
         prog.add_argument("url").help("URL").required();
 
         try {
@@ -79,6 +121,7 @@ namespace novel
         }
 
         f.proxy = prog.get<std::string>("--proxy");
+        f.upload = prog.get<std::string>("--upload");
         f.url = prog.get<std::string>("url");
         return true;
     }
