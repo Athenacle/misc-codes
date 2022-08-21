@@ -187,7 +187,6 @@ void freeClient(struct HttpClient* c);
 typedef int (*checkWebsite)(URL);
 typedef void (*doNovel)(URL, struct CurlResponse*, struct Novel*);
 
-INFO(fmt::format("Using proxy {}", config.proxy));
 struct WebsiteHandler {
     checkWebsite check;
     doNovel doIt;
