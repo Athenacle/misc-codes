@@ -57,6 +57,7 @@ void freeCoreTempBuffer(void*);
 // types
 typedef const char* URL;
 
+extern struct DownloadConfig config;
 
 struct Buffer {
     char* buffer;
@@ -186,6 +187,7 @@ void freeClient(struct HttpClient* c);
 typedef int (*checkWebsite)(URL);
 typedef void (*doNovel)(URL, struct CurlResponse*, struct Novel*);
 
+INFO(fmt::format("Using proxy {}", config.proxy));
 struct WebsiteHandler {
     checkWebsite check;
     doNovel doIt;

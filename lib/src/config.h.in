@@ -32,8 +32,9 @@
 
 #cmakedefine UNIX_HAVE_MMAP
 
-// clang-format off
+#cmakedefine OPENCC
 
+// clang-format off
 #define PROJECT_GIT_SHA "@GIT_HASH@"
 
 #define PROJECT_NAME "@PROJECT_NAME@"

@@ -8,29 +8,23 @@
 
 #include "utils.h"
 
-namespace
-{
-    [[noreturn]] void usage(const char* argv[])
-    {
-        auto myname = argv[0];
-        std::cerr << myname << ": no url found" << std::endl
-                  << "usage: " << myname << " <url>" << std::endl;
-        exit(1);
-    }
-}  // namespace
 
 int main(int argc, const char* argv[])
 {
     struct Novel n;
+    novel::Flags f;
+    DownloadConfig c;
 
-    if (argc != 2) {
-        usage(argv);
-    }
+    parseArgument(f, argc, argv);
+    c.lineSeparate = f.paraLeadingSpace;
+    c.paraSeparate = f.paraSeparate;
+    c.proxy = f.proxy.c_str();
+
     novel::set_log_level(NDL_TRACE);
     ND_set_log_function(novel::logger_func);
 
-    ND_init();
-    ND_doit(argv[1], &n);
+    ND_init(&c);
+    ND_doit(f.url.c_str(), &n);
     novel::saveNovel(&n);
     ND_novel_free(&n);
     ND_shutdown();

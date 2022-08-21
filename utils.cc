@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include <argparse/argparse.hpp>
+
 using namespace spdlog::level;
 
 namespace
@@ -52,5 +54,32 @@ namespace novel
                 fclose(fp);
             }
         }
+    }
+
+    bool parseArgument(Flags& f, int argc, const char** argv)
+    {
+#ifdef VERSION
+        argparse::ArgumentParser prog(argv[0], VERSION);
+#else
+        argparse::ArgumentParser prog(argv[0]);
+#endif
+
+        prog.add_argument("-p", "--proxy")
+            .help("use proxy in curl format.")
+            .default_value(std::string(""));
+
+        prog.add_argument("url").help("URL").required();
+
+        try {
+            prog.parse_args(argc, argv);
+        } catch (const std::exception& err) {
+            std::cerr << err.what() << std::endl;
+            std::cerr << prog;
+            std::exit(1);
+        }
+
+        f.proxy = prog.get<std::string>("--proxy");
+        f.url = prog.get<std::string>("url");
+        return true;
     }
 }  // namespace novel
