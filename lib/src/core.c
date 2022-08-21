@@ -221,9 +221,20 @@ void xmlErrorPrint(MAYBE_UNUSED void* ctx, const char* msg, ...)
 }
 
 static xmlGenericErrorFunc errFunc = xmlErrorPrint;
+struct DownloadConfig config;
 
-void ND_init()
+void ND_init(struct DownloadConfig* c)
 {
+    memset(&config, 0, sizeof(config));
+    if (c != NULL) {
+        memcpy(&config, c, sizeof(config));
+        if (c->proxy != NULL && strlen(c->proxy) != 0) {
+            config.proxy = strdup(c->proxy);
+        } else {
+            config.proxy = NULL;
+        }
+    }
+
     if (coreBufferMutex == NULL) {
 #ifndef NDEBUG
         initFuncs();

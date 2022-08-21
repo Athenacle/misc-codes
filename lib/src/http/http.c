@@ -116,6 +116,14 @@ static void initCurl(CURL *curl)
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curlHeaderCB), CURLE_OK);
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L), CURLE_OK);
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""), CURLE_OK);
+    if (config.proxy) {
+        TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_PROXY, config.proxy), CURLE_OK);
+        size_t size = 50 + strlen(config.proxy);
+        char *buf = (char *)malloc(size);
+        snprintf(buf, size, "Http Request via proxy %s", config.proxy);
+        INFO(buf);
+        free(buf);
+    }
 }
 
 void initHttpClient(struct HttpClient *hc)

@@ -42,6 +42,14 @@ struct JJwxc {
     char* look;
 };
 
+struct DownloadConfig {
+    int lineSeparate;
+
+    int paraSeparate;
+
+    const char* proxy;
+};
+
 char* ND_collect_novel(struct Novel* n);
 void ND_free_collected_buffer(char*);
 
@@ -57,7 +65,7 @@ void ND_jjwxc_free(struct JJwxc*);
 
 void ND_doit(const char* url, struct Novel* novel);
 
-void ND_init();
+void ND_init(struct DownloadConfig*);
 
 void ND_shutdown();
 

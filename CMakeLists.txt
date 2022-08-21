@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
 
-
 include(FindPkgConfig)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -13,7 +12,7 @@ set(WXAC_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
-endif()
+endif ()
 
 set(PRJECT_NAME nDownloader)
 project(${PRJECT_NAME} LANGUAGES CXX VERSION ${WXAC_VERSION})
@@ -30,14 +29,16 @@ set(THIRD_PARTY_DIR ${CMAKE_BINARY_DIR}/3party)
 file(MAKE_DIRECTORY ${THIRD_PARTY_DIR})
 
 include(Check)
-
+include(ArgParse)
 add_subdirectory(lib)
 
 add_executable(downloader downloader.cc utils.cc)
 target_link_libraries(downloader ndown spdlog::spdlog)
-target_include_directories(downloader PRIVATE lib/include)
+target_include_directories(downloader PRIVATE lib/include ${ARGPARSE_INC_DIR})
+target_compile_definitions(downloader PRIVATE VERSION="${WXAC_VERSION}")
 
 find_package(spdlog REQUIRED)
 add_executable(jjwxc jjwxc.cc utils.cc)
 target_link_libraries(jjwxc ndown spdlog::spdlog)
-target_include_directories(jjwxc PRIVATE lib/include )
+target_include_directories(jjwxc PRIVATE lib/include ${ARGPARSE_INC_DIR})
+target_compile_definitions(jjwxc PRIVATE VERSION="${WXAC_VERSION}")

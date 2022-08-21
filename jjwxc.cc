@@ -47,7 +47,7 @@ int main()
     ND_set_log_function(logger_func);
 
     struct JJwxc jj;
-    ND_init();
+    ND_init(nullptr);
     ND_jjwxc_doit_buffer(data, s, &jj);
 
     unloadHTML(data, s);
