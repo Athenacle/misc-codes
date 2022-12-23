@@ -67,14 +67,14 @@ void ND_doit(const char* url, struct Novel* novel);
 
 void ND_init(struct DownloadConfig*);
 
-void ND_shutdown();
+void ND_shutdown(void);
 
 void ND_set_log_function(ND_logger_func func);
 
 void ND_novel_free(struct Novel* n);
 
 // user-agents
-const char* ND_random_ua();
+const char* ND_random_ua(void);
 
 // utils
 void ND_set_thread_count(int tc);
