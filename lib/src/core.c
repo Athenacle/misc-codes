@@ -123,7 +123,7 @@ void print_func(struct LinkList* l)
     INFO(buffer);
 }
 
-static void clearFuncs()
+static void clearFuncs(void)
 {
     traverseLinkList(&funcs, print_func);
     freeLinkList(&funcs, clearFunc);
@@ -131,7 +131,7 @@ static void clearFuncs()
     free(m);
 }
 
-static void initFuncs()
+static void initFuncs(void)
 {
     pthread_mutexattr_t attr;
 
@@ -175,7 +175,7 @@ ND_logger_func logger = ND_default_logger;
 char* coreBuffer = NULL;
 pthread_mutex_t* coreBufferMutex = NULL;
 
-char* getCoreTempBuffer()
+char* getCoreTempBuffer(void)
 {
     pthread_mutex_lock(coreBufferMutex);
     *coreBuffer = 0;
@@ -188,7 +188,7 @@ void freeCoreTempBuffer(MAYBE_UNUSED void* tb)
     pthread_mutex_unlock(coreBufferMutex);
 }
 
-static void doAtExit()
+static void doAtExit(void)
 {
     if (coreBuffer && coreBufferMutex) {
         ND_shutdown();
@@ -273,7 +273,7 @@ void ND_init(struct DownloadConfig* c)
     }
 }
 
-void ND_shutdown()
+void ND_shutdown(void)
 {
     curl_global_cleanup();
     xmlCleanupParser();

@@ -141,7 +141,7 @@ static char uas[][150] = {
     "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0",
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:79.0) Gecko/20100101 Firefox/79.0"};
 
-const char* ND_random_ua()
+const char* ND_random_ua(void)
 {
     return uas[rand() % (sizeof uas / sizeof(uas[0]))];
 }

@@ -51,7 +51,7 @@ void trace_expresion(const char* ex, const char* file, int line, int value, int 
 
 #define CORE_BUFFER_SIZE (1 << 11)
 
-char* getCoreTempBuffer();
+char* getCoreTempBuffer(void);
 void freeCoreTempBuffer(void*);
 
 // types
@@ -97,7 +97,7 @@ struct Queue {
     struct LinkList* tail;
 };
 
-struct Chapter* createChapter();
+struct Chapter* createChapter(void);
 
 void appendChapter(struct Chapter* chapters, struct Chapter* next);
 
@@ -194,7 +194,7 @@ struct WebsiteHandler {
     const char* name;
 };
 
-void initWebsites();
+void initWebsites(void);
 
 struct WebsiteHandler* dispatchURL(URL url);
 

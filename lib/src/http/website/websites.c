@@ -6,7 +6,7 @@
 struct WebsiteHandler* handlers[] = {
     &wxc256, &wenku256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
 
-void initWebsites() {}
+void initWebsites(void) {}
 
 int htmlCheck_P(xmlNodePtr node)
 {
