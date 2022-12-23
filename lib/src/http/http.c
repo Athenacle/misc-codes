@@ -2,69 +2,192 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include <curl/curl.h>
 
-static size_t writeCB(void *data, size_t size, size_t nmemb, void *userp)
+#define HPARSER_OPTION (HTML_PARSE_NOWARNING | HTML_PARSE_NOERROR | HTML_PARSE_RECOVER)
+
+static void initCurlResponseData(struct CurlResponse *resp)
+{
+    if (resp->type != TEXT_HTML) {
+        initBuffer(&resp->data.buf);
+    }
+}
+
+int inputHttpParser(struct HtmlParser *parser, const void *data, int size)
+{
+    if (parser->ctx == NULL) {
+        parser->ctx = htmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL, XML_CHAR_ENCODING_NONE);
+        htmlCtxtUseOptions(parser->ctx, HPARSER_OPTION);
+    }
+    if (size == 0) {
+        int ret = htmlParseChunk(parser->ctx, data, size, 1);
+        parser->doc = parser->ctx->myDoc;
+        return ret;
+    } else if (size > 0) {
+        return htmlParseChunk(parser->ctx, data, size, 0);
+    } else {
+        int ret = htmlParseChunk(parser->ctx, data, -1 * size, 1);
+        parser->doc = parser->ctx->myDoc;
+        return ret;
+    }
+}
+
+static size_t curlWriteDataCB(void *data, size_t size, size_t nmemb, void *userp)
 {
     size_t realsize = size * nmemb;
 
-    struct Buffer *buf = (struct Buffer *)(userp);
-    appendBuffer(buf, data, realsize);
+    struct CurlResponse *resp = (struct CurlResponse *)(userp);
+
+    resp->contentLength += realsize;
+
+    if (resp->type == TEXT_HTML) {
+        inputHttpParser(&resp->data.parser, data, realsize);
+    } else {
+        appendBuffer(&resp->data.buf, data, realsize);
+    }
 
     return realsize;
 }
 
-void client_init(struct HttpClient *hc)
+
+#define CONTENT_TYPE "content-type"
+
+#define CT_TEXT_HTML "text/html"
+#define CT_IMAGE_JPEG "image/jpeg"
+#define CT_APP_JSON "application/json"
+#define CT_TEXT_PLAIN "text/plain"
+
+#define MATCH_CT(in, text)                           \
+    (((numbytes + (b - hv) - 2) == sizeof(text) - 1) \
+     && strncasecmp(in, text, sizeof(text) - 1) == 0)
+
+static size_t curlHeaderCB(char *b, size_t size, size_t nitems, void *userdata)
+{
+    size_t numbytes = size * nitems;
+
+    struct CurlResponse *resp = (struct CurlResponse *)userdata;
+
+    if (strncasecmp(b, CONTENT_TYPE, sizeof(CONTENT_TYPE) - 1) == 0) {
+        char *hv = b + sizeof(CONTENT_TYPE);
+        char c;
+        while ((c = *hv) != '\r') {
+            if (unlikely(isblank(c) || c == ':')) {
+                hv++;
+            } else {
+                break;
+            }
+        }
+
+        if (likely(MATCH_CT(hv, CT_TEXT_HTML))) {
+            resp->type = TEXT_HTML;
+        } else if (likely(MATCH_CT(hv, CT_IMAGE_JPEG))) {
+            resp->type = IMAGE_JPEG;
+        } else if (MATCH_CT(hv, CT_APP_JSON)) {
+            resp->type = APP_JSON;
+        } else if (MATCH_CT(hv, CT_TEXT_PLAIN)) {
+            resp->type = TEXT_PLAIN;
+        } else {
+            char *lb = getCoreTempBuffer();
+            for (int i = 0; i < CORE_BUFFER_SIZE; i++) {
+                c = *hv;
+                if (c == 0xd && hv[1] == 0xa) {
+                    lb[i] = 0;
+                } else {
+                    lb[i] = c;
+                }
+            }
+            resp->type = CT_NONE;
+            resp->contentType = strdup(lb);
+            freeCoreTempBuffer(lb);
+        }
+        initCurlResponseData(resp);
+    }
+
+    return numbytes;
+}
+#undef MATCH_CT
+
+static void initCurl(CURL *curl)
+{
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlWriteDataCB), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua()), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curlHeaderCB), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L), CURLE_OK);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""), CURLE_OK);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
+    if (config.proxy) {
+        TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_PROXY, config.proxy), CURLE_OK);
+        size_t size = 50 + strlen(config.proxy);
+        char *buf = (char *)malloc(size);
+        snprintf(buf, size, "Http Request via proxy %s", config.proxy);
+        INFO(buf);
+        free(buf);
+    }
+}
+
+void initHttpClient(struct HttpClient *hc)
 {
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCB);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua());
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+    TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L), CURLE_OK);
+    initCurl(curl);
 
     hc->curl = curl;
 }
 
-void client_fetch(URL url, struct HttpClient *hc, struct CurlResponse *resp)
+#define SUCCESS_FMT "Get URL %s successfully Status Code %d, ContentLength: %ld"
+#define FAILED_FMT "Get URL %s failed, error %s."
+
+
+void fetchClient(URL url, struct HttpClient *hc, struct CurlResponse *resp)
 {
     CURL *curl = hc->curl;
     CURLcode res;
-    struct Buffer buf;
-    initBuffer(&buf);
+    char *msg;
+    int try = 0;
 
-    size_t size = strlen(url) + 128;
-    char *msg = (char *)malloc(size);
+    do {
+        int s = 1 << try;
+        try += 1;
+        if (try > 1) {
+            sleepSeconds(s);
+        }
 
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf);
-    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, url);
+        SET_ZERO(resp);
 
-    resp->htmlLength = resp->status = 0;
-    resp->html = resp->responseHeader = NULL;
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)resp);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void *)resp);
 
-    res = curl_easy_perform(curl);
-    res = curl_easy_perform(curl);
-    if (res == CURLE_OK) {
-        resp->html = collectBuffer(&buf, &resp->htmlLength);
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
-        snprintf(msg,
-                 size,
-                 "Get URL %s successfully Status Code %d, ContentLength: %ld",
-                 url,
-                 resp->status,
-                 totalSize(&buf));
-        DEBUG(msg);
-    } else {
-        snprintf(msg, size, "Get URL %s failed, error %s.", url, curl_easy_strerror(res));
-        ERROR(msg);
-    }
+        res = curl_easy_perform(curl);
+        if (resp->type == TEXT_HTML) {
+            inputHttpParser(&(resp->data.parser), NULL, 0);
+        }
 
-    clearBuffer(&buf);
-    free(msg);
+        msg = getCoreTempBuffer();
+
+        if (res == CURLE_OK) {
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
+            snprintf(msg, CORE_BUFFER_SIZE, SUCCESS_FMT, url, resp->status, resp->contentLength);
+            DEBUG(msg);
+            freeCoreTempBuffer(msg);
+            break;
+        } else {
+            snprintf(msg,
+                     CORE_BUFFER_SIZE,
+                     "Get URL %s failed, error %s, sleep %d seconds and retry #Try: %d.",
+                     url,
+                     curl_easy_strerror(res),
+                     s,
+                     try);
+            ERROR(msg);
+        }
+        freeCoreTempBuffer(msg);
+    } while (try < 5);
 }
 
-void client_free(struct HttpClient *hc)
+void freeClient(struct HttpClient *hc)
 {
     CURL *curl = (CURL *)(hc->curl);
     curl_easy_cleanup(curl);
@@ -72,39 +195,8 @@ void client_free(struct HttpClient *hc)
 
 void fetch(URL url, struct CurlResponse *resp)
 {
-    struct Buffer buf;
-
-    CURL *curl = curl_easy_init();
-    size_t size = strlen(url) + 128;
-    char *msg = (char *)malloc(size);
-
-    resp->status = 0;
-    initBuffer(&buf);
-    resp->html = NULL;
-
-    CURLcode res;
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCB);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&buf);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, ND_random_ua());
-
-    res = curl_easy_perform(curl);
-    if (res == CURLE_OK) {
-        resp->html = collectBuffer(&buf, &resp->htmlLength);
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
-        snprintf(msg,
-                 size,
-                 "Get URL %s successfully Status Code %d, ContentLength: %ld",
-                 url,
-                 resp->status,
-                 totalSize(&buf));
-        DEBUG(msg);
-    } else {
-        snprintf(msg, size, "Get URL %s failed, error %s.", url, curl_easy_strerror(res));
-        ERROR(msg);
-    }
-    curl_easy_cleanup(curl);
-    clearBuffer(&buf);
-    free(msg);
+    struct HttpClient hc;
+    initHttpClient(&hc);
+    fetchClient(url, &hc, resp);
+    freeClient(&hc);
 }

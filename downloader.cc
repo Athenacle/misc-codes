@@ -6,40 +6,30 @@
 #include <iostream>
 #include <cstring>
 
-namespace
-{
-    [[noreturn]] void usage(const char* argv[])
-    {
-        auto myname = argv[0];
-        std::cerr << myname << ": no url found" << std::endl
-                  << "usage: " << myname << " <url>" << std::endl;
-        exit(1);
-    }
-}  // namespace
+#include "utils.h"
+
 
 int main(int argc, const char* argv[])
 {
     struct Novel n;
+    novel::Flags f;
+    DownloadConfig c;
 
+    parseArgument(f, argc, argv);
+    c.lineSeparate = f.paraLeadingSpace;
+    c.paraSeparate = f.paraSeparate;
+    c.proxy = f.proxy.c_str();
 
-    if (argc != 2) {
-        usage(argv);
-    }
+    novel::set_log_level(NDL_TRACE);
+    ND_set_log_function(novel::logger_func);
 
-    ND_init();
-    ND_doit(argv[1], &n);
-
-    std::string title(n.title);
-    title.append(".txt");
-
-    FILE* fp = fopen(title.c_str(), "w");
-    if (fp == nullptr) {
-        std::cerr << "Open file " << title << " failed: " << strerror(errno) << std::endl;
+    ND_init(&c);
+    ND_doit(f.url.c_str(), &n);
+    if (f.upload.length() > 0) {
+        novel::uploadNovel(&n, f);
     } else {
-        fprintf(fp, "%s", n.context);
-        fclose(fp);
+        novel::saveNovel(&n);
     }
-
-    ND_clear_novel(&n);
+    ND_novel_free(&n);
     ND_shutdown();
 }

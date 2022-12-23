@@ -44,11 +44,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQU
         set(list_var "${ARGN}")
         foreach (flag IN LISTS list_var)
             string(TOUPPER ${flag} FLAG_NAME1)
-            string(
-                REPLACE "-"
-                        "_"
-                        FLAG_NAME2
-                        ${FLAG_NAME1})
+            string(REPLACE "-" "_" FLAG_NAME2 ${FLAG_NAME1})
             string(CONCAT FLAG_NAME "COMPILER_SUPPORT_" ${FLAG_NAME2})
             check_c_compiler_flag(-${flag} ${FLAG_NAME})
             if (${${FLAG_NAME}})
@@ -78,3 +74,11 @@ endif ()
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ON_64BITS ON)
 endif ()
+
+find_program(GIT_COMMAND git)
+execute_process(COMMAND ${GIT_COMMAND} rev-parse HEAD RESULT_VARIABLE result
+                OUTPUT_VARIABLE GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if (NOT $"GIT_HASH" STREQUAL "")
+    add_compile_definitions(GIT_HASH="${GIT_HASH}")
+endif()
