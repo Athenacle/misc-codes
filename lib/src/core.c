@@ -252,8 +252,12 @@ void ND_init(struct DownloadConfig* c)
         pthread_mutexattr_destroy(&attr);
 
         coreBuffer = (char*)malloc(CORE_BUFFER_SIZE * sizeof(char));
-
+#ifdef GIT_HASH
+        snprintf(
+            coreBuffer, CORE_BUFFER_SIZE, "ND_init. Version: %s (%s)", PROJECT_VERSION, GIT_HASH);
+#else
         snprintf(coreBuffer, CORE_BUFFER_SIZE, "ND_init. Version: %s", PROJECT_VERSION);
+#endif
         DEBUG(coreBuffer);
 
         srand(time(NULL));
@@ -434,3 +438,11 @@ void ND_jjwxc_free(struct JJwxc* jj)
     free(jj->updateStatus);
     free(jj->look);
 }
+
+#ifdef UNIX
+#include <unistd.h>
+int sleepSeconds(int s)
+{
+    return sleep((unsigned int)s);
+}
+#endif

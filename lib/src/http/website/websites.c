@@ -3,7 +3,8 @@
 #include <string.h>
 #include <libxml/HTMLtree.h>
 
-struct WebsiteHandler* handlers[] = {&wxc256, &wenku256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
+struct WebsiteHandler* handlers[] = {
+    &wxc256, &wenku256, &shuku52vip, &shuku52info, &hnxyrz, &jjwxc};
 
 void initWebsites() {}
 
@@ -286,16 +287,16 @@ static char* dump_strip_string(const unsigned char* in)
             in += 2;
             continue;
         } else {
-            in--;
             break;
         }
     }
+    in--;
     char* ret = strdup((const char*)in);
     unsigned char* end = (unsigned char*)ret;
     while (*end++)
         ;
     end -= 1;
-    while ((c = *--end)) {
+    while ((char*)end > ret && (c = *--end)) {
         if ((char*)end == ret) {
             break;
         } else if (c == '\n' || c == '\r' || c == ' ' || c == '\t') {
@@ -306,10 +307,38 @@ static char* dump_strip_string(const unsigned char* in)
             break;
         }
     }
-    *(end + 1) = 0;
+    if (*end != 0)
+        *(end + 1) = 0;
     return ret;
 }
 
+static char* getElementNodeText(xmlNodePtr ptr)
+{
+    struct Buffer buf;
+    size_t s;
+    initBuffer(&buf);
+    xmlNodePtr n = ptr;
+    while (n) {
+        if (n->type == XML_ELEMENT_NODE) {
+            if (CHECK_TAG_NAME(n, "br")) {
+                appendBufferString(&buf, "\n");
+            } else {
+                char* c = getElementNodeText(n);
+                appendBufferString(&buf, c);
+                free(n);
+            }
+        }
+        if (n->content) {
+            char* tmp = dump_strip_string(n->content);
+            appendBufferString(&buf, tmp);
+            free(tmp);
+        }
+        n = n->next;
+    }
+    char* out = collectBuffer(&buf, &s);
+    clearBuffer(&buf);
+    return out;
+}
 
 char* getNodeText(xmlNodePtr ptr)
 {
@@ -320,6 +349,8 @@ char* getNodeText(xmlNodePtr ptr)
             return dump_strip_string(ptr->children->content);
         } else if (ptr->type == XML_TEXT_NODE && ptr->content) {
             return dump_strip_string(ptr->content);
+        } else if (ptr->type == XML_ELEMENT_NODE && ptr->children) {
+            return getElementNodeText(ptr->children);
         }
     }
     return strdup("");

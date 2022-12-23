@@ -92,23 +92,36 @@ namespace novel
         }
 
         unlink(f.c_str());
+        curl_easy_cleanup(c);
     }
 
 
     bool parseArgument(Flags& f, int argc, const char** argv)
     {
-#ifdef VERSION
-        argparse::ArgumentParser prog(argv[0], VERSION);
+#if defined VERSION  && defined GIT_HASH
+        argparse::ArgumentParser prog(argv[0], VERSION "-" GIT_HASH);
 #else
         argparse::ArgumentParser prog(argv[0]);
 #endif
 
         prog.add_argument("-p", "--proxy")
             .help("use proxy in curl format.")
-            .default_value(std::string(""));
+            .default_value(
+                std::string(
+#ifdef DEFAULT_PROXY
+            DEFAULT_PROXY 
+#else
+                ""
+#endif
+                ));
 
-
-        prog.add_argument("-u", "--upload").help("upload").default_value(std::string(""));
+        prog.add_argument("-u", "--upload").help("upload").default_value(std::string(
+#ifdef DEFAULT_UPLOAD
+            DEFAULT_UPLOAD
+#else
+            ""
+#endif        
+            ));
 
         prog.add_argument("url").help("URL").required();
 

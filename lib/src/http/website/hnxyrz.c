@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <string.h>
 //https://www.hnxyrz.com/other/tpl/chapters/id/40725.html

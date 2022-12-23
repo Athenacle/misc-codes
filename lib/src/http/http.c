@@ -116,6 +116,7 @@ static void initCurl(CURL *curl)
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curlHeaderCB), CURLE_OK);
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L), CURLE_OK);
     TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""), CURLE_OK);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
     if (config.proxy) {
         TRACE_EXPR(curl_easy_setopt(curl, CURLOPT_PROXY, config.proxy), CURLE_OK);
         size_t size = 50 + strlen(config.proxy);
@@ -144,29 +145,46 @@ void fetchClient(URL url, struct HttpClient *hc, struct CurlResponse *resp)
     CURL *curl = hc->curl;
     CURLcode res;
     char *msg;
+    int try = 0;
 
-    SET_ZERO(resp);
+    do {
+        int s = 1 << try;
+        try += 1;
+        if (try > 1) {
+            sleepSeconds(s);
+        }
 
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)resp);
-    curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void *)resp);
+        SET_ZERO(resp);
 
-    res = curl_easy_perform(curl);
-    if (resp->type == TEXT_HTML) {
-        inputHttpParser(&(resp->data.parser), NULL, 0);
-    }
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)resp);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void *)resp);
 
-    msg = getCoreTempBuffer();
+        res = curl_easy_perform(curl);
+        if (resp->type == TEXT_HTML) {
+            inputHttpParser(&(resp->data.parser), NULL, 0);
+        }
 
-    if (res == CURLE_OK) {
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
-        snprintf(msg, CORE_BUFFER_SIZE, SUCCESS_FMT, url, resp->status, resp->contentLength);
-        DEBUG(msg);
-    } else {
-        snprintf(msg, CORE_BUFFER_SIZE, FAILED_FMT, url, curl_easy_strerror(res));
-        ERROR(msg);
-    }
-    freeCoreTempBuffer(msg);
+        msg = getCoreTempBuffer();
+
+        if (res == CURLE_OK) {
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resp->status);
+            snprintf(msg, CORE_BUFFER_SIZE, SUCCESS_FMT, url, resp->status, resp->contentLength);
+            DEBUG(msg);
+            freeCoreTempBuffer(msg);
+            break;
+        } else {
+            snprintf(msg,
+                     CORE_BUFFER_SIZE,
+                     "Get URL %s failed, error %s, sleep %d seconds and retry #Try: %d.",
+                     url,
+                     curl_easy_strerror(res),
+                     s,
+                     try);
+            ERROR(msg);
+        }
+        freeCoreTempBuffer(msg);
+    } while (try < 5);
 }
 
 void freeClient(struct HttpClient *hc)

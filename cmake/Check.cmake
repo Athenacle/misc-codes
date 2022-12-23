@@ -78,3 +78,7 @@ endif ()
 find_program(GIT_COMMAND git)
 execute_process(COMMAND ${GIT_COMMAND} rev-parse HEAD RESULT_VARIABLE result
                 OUTPUT_VARIABLE GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if (NOT $"GIT_HASH" STREQUAL "")
+    add_compile_definitions(GIT_HASH="${GIT_HASH}")
+endif()

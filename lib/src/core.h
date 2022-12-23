@@ -157,6 +157,7 @@ void* compileRegex(const char* regex);
 void freeRegex(void* regex);
 int matchRegexCompiled(const char* string, void* regex);
 
+int sleepSeconds(int);
 // thread work
 
 struct Work {
